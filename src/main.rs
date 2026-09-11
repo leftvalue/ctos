@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 
 use anyhow::{Context, Result};
-use clap::Parser;
+use clap::{CommandFactory, Parser};
 
 use cli::{Cli, Command, CommonArgs, Format};
 use config::{BudgetsConfig, ModelsConfig};
@@ -52,7 +52,16 @@ fn run(cli: Cli) -> Result<ExitCode> {
             path,
             models_config,
         }) => run_calibrate(&model, &path, models_config.as_deref()),
+        Some(Command::Completions { shell }) => run_completions(shell),
     }
+}
+
+/// Print a shell completion script to stdout. Always exits 0.
+fn run_completions(shell: clap_complete::Shell) -> Result<ExitCode> {
+    let mut cmd = Cli::command();
+    let name = cmd.get_name().to_string();
+    clap_complete::generate(shell, &mut cmd, name, &mut std::io::stdout());
+    Ok(ExitCode::SUCCESS)
 }
 
 fn require_paths(args: &CommonArgs) -> Result<&[PathBuf]> {

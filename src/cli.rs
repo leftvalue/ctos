@@ -9,6 +9,7 @@
 use std::path::PathBuf;
 
 use clap::{Args, Parser, Subcommand, ValueEnum};
+use clap_complete::Shell;
 
 pub const ABOUT: &str = "ctos — count tokens of skill";
 pub const LONG_ABOUT: &str = "\
@@ -205,5 +206,15 @@ pub enum Command {
         /// Custom models.toml registry.
         #[arg(long = "models-config", value_name = "PATH")]
         models_config: Option<PathBuf>,
+    },
+
+    /// Generate a shell completion script (bash, zsh, fish, powershell, elvish).
+    ///
+    /// Print the script to stdout; install it into your shell's completion
+    /// directory to enable Tab completion. See the README for per-shell steps.
+    Completions {
+        /// Target shell.
+        #[arg(value_enum)]
+        shell: Shell,
     },
 }

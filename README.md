@@ -83,10 +83,10 @@ ctos check ./skills
 Example (language aggregation + skill layers):
 
 ```
-ctos v0.1.0 — count tokens of skill
+ctos v0.1.1 — count tokens of skill
 root: /repo/skills
       7 files scanned.  (6 text, 1 binary)
-github.com/leftvalue/ctos v0.1.0  T=0.02 s (350.0 files/s, 8100.0 lines/s)
+github.com/leftvalue/ctos v0.1.1  T=0.02 s (350.0 files/s, 8100.0 lines/s)
 
 tokenizer: gpt-4o (tiktoken)
 ┌──────────┬───────┬───────┬─────────┬─────────┐
@@ -148,12 +148,12 @@ for five targets, packaged as compressed archives:
 
 > **Not sure which one?** Run `uname -m`: `x86_64` / `amd64` → the x86_64 build;
 > `arm64` / `aarch64` → the aarch64 build. (On a modern Mac, Apple Silicon =
-> arm64.) Replace `v0.1.0` below with the latest tag on the Releases page.
+> arm64.) Replace `v0.1.1` below with the latest tag on the Releases page.
 
 **Linux — x86_64 (Intel/AMD):**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-unknown-linux-musl.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.1/ctos-x86_64-unknown-linux-musl.tar.gz | tar xz
 sudo install -m 755 ctos /usr/local/bin/ctos   # or: sudo mv ctos /usr/local/bin/
 ctos --version
 ```
@@ -161,7 +161,7 @@ ctos --version
 **Linux — aarch64 (ARM64):**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-aarch64-unknown-linux-musl.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.1/ctos-aarch64-unknown-linux-musl.tar.gz | tar xz
 sudo install -m 755 ctos /usr/local/bin/ctos
 ctos --version
 ```
@@ -169,7 +169,7 @@ ctos --version
 **macOS — Apple Silicon (M1/M2/M3, arm64):**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-aarch64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.1/ctos-aarch64-apple-darwin.tar.gz | tar xz
 xattr -d com.apple.quarantine ./ctos 2>/dev/null || true   # clear Gatekeeper quarantine
 sudo mv ctos /usr/local/bin/
 ctos --version
@@ -178,7 +178,7 @@ ctos --version
 **macOS — Intel (x86_64):**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.1/ctos-x86_64-apple-darwin.tar.gz | tar xz
 xattr -d com.apple.quarantine ./ctos 2>/dev/null || true   # clear Gatekeeper quarantine
 sudo mv ctos /usr/local/bin/
 ctos --version
@@ -187,7 +187,7 @@ ctos --version
 **Windows — x86_64 (PowerShell):**
 
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-pc-windows-msvc.zip" -OutFile ctos.zip
+Invoke-WebRequest -Uri "https://github.com/leftvalue/ctos/releases/download/v0.1.1/ctos-x86_64-pc-windows-msvc.zip" -OutFile ctos.zip
 Expand-Archive ctos.zip -DestinationPath .
 .\ctos.exe --version
 # then move ctos.exe to a folder on your PATH
@@ -203,7 +203,7 @@ Expand-Archive ctos.zip -DestinationPath .
 ### Option 2 — install from git with Cargo (no crates.io needed)
 
 ```bash
-cargo install --git https://github.com/leftvalue/ctos --tag v0.1.0
+cargo install --git https://github.com/leftvalue/ctos --tag v0.1.1
 # or the latest default branch:
 cargo install --git https://github.com/leftvalue/ctos
 ```
@@ -254,14 +254,52 @@ docker run --rm ghcr.io/leftvalue/ctos models
 > The container's working directory is `/work`; mount your project there and use
 > `/work/...` paths. The image has no shell — `ctos` is the entrypoint.
 
+### Shell completions
+
+`ctos` can generate a Tab-completion script for your shell (covering every
+subcommand and flag). Nothing is enabled by default — generate the script once
+and install it where your shell looks for completions.
+
+**bash:**
+
+```bash
+mkdir -p ~/.local/share/bash-completion/completions
+ctos completions bash > ~/.local/share/bash-completion/completions/ctos
+# system-wide alternative:
+# ctos completions bash | sudo tee /etc/bash_completion.d/ctos >/dev/null
+```
+
+**zsh:**
+
+```bash
+mkdir -p ~/.zfunc
+ctos completions zsh > ~/.zfunc/_ctos
+# ensure these are in ~/.zshrc (once):
+#   fpath=(~/.zfunc $fpath)
+#   autoload -U compinit && compinit
+```
+
+**fish:**
+
+```bash
+ctos completions fish > ~/.config/fish/completions/ctos.fish
+```
+
+Restart your shell (fish picks it up automatically) and Tab will complete
+`ctos ch⇥` → `check`, `--for⇥` → `--format`, enum values, and so on.
+
+> `powershell` and `elvish` are supported too (`ctos completions powershell`,
+> `ctos completions elvish`). After upgrading `ctos`, regenerate the script if
+> its subcommands or options changed.
+
 ### Cutting a release (maintainers)
 
 Pushing code alone does **not** create binaries. The release workflow triggers on
 a version tag:
 
 ```bash
-git tag v0.1.0
-git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 GitHub Actions then vendors the tokenizers, cross-compiles all five targets,
@@ -415,7 +453,7 @@ aggregation:
 
 ```json
 {
-  "tool": { "name": "ctos", "version": "0.1.0" },
+  "tool": { "name": "ctos", "version": "0.1.1" },
   "models": ["gpt-4o"],
   "results": [
     {
@@ -462,7 +500,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install ctos
-        run: cargo install --git https://github.com/leftvalue/ctos --tag v0.1.0   # or download a release binary
+        run: cargo install --git https://github.com/leftvalue/ctos --tag v0.1.1   # or download a release binary
       - name: Enforce skill budgets
         run: ctos check ./skills -m gpt-4o
 ```
