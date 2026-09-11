@@ -112,7 +112,7 @@ impl ModelReport {
 pub struct Report {
     pub tool_name: String,
     pub tool_version: String,
-    pub root: PathBuf,
+    pub roots: Vec<PathBuf>,
     pub models: Vec<String>,
     pub reports: Vec<ModelReport>,
     /// Total files scanned (text + binary).

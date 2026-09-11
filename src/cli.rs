@@ -25,6 +25,8 @@ layered on top. `ctos check` doubles as a CI budget gate for skill size.
 pub enum Format {
     Table,
     Json,
+    Md,
+    Csv,
 }
 
 /// Visual style for `table` output.
@@ -36,11 +38,22 @@ pub enum TableStyle {
     Plain,
 }
 
+/// Sort key for language / file tables.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum SortKey {
+    Tokens,
+    Bytes,
+    Lines,
+    Files,
+    Name,
+}
+
 /// Options shared by `count` (default) and `check`.
 #[derive(Debug, Clone, Args)]
 pub struct CommonArgs {
-    /// Path to scan (file or directory). Required unless a subcommand is used.
-    pub path: Option<PathBuf>,
+    /// Paths to scan (files or directories). Use `-` to read from stdin.
+    /// Required unless a subcommand is used.
+    pub paths: Vec<PathBuf>,
 
     /// Tokenizer model to use; repeatable. Defaults to `default_models` from the
     /// registry (ships as qwen3). Ignored when `--all-models` is set.
@@ -61,6 +74,10 @@ pub struct CommonArgs {
     #[arg(long, value_enum, default_value_t = TableStyle::Boxed)]
     pub style: TableStyle,
 
+    /// Sort language/file rows by this key (default: tokens, descending).
+    #[arg(long, value_enum, default_value_t = SortKey::Tokens)]
+    pub sort: SortKey,
+
     /// Write output to a file instead of stdout.
     #[arg(short = 'o', long, value_name = "PATH")]
     pub output: Option<PathBuf>,
@@ -77,13 +94,56 @@ pub struct CommonArgs {
     #[arg(long = "no-ignore")]
     pub no_ignore: bool,
 
-    /// Per-file detail (expands L3 files / by-file code listing).
+    /// Exclude directories by name (comma-separated), e.g. `node_modules,test`.
+    #[arg(long = "exclude-dir", value_name = "D1,D2,...", value_delimiter = ',')]
+    pub exclude_dir: Vec<String>,
+
+    /// Only count files with these extensions (comma-separated whitelist).
+    #[arg(long = "include-ext", value_name = "e1,e2,...", value_delimiter = ',')]
+    pub include_ext: Vec<String>,
+
+    /// Do not count files with these extensions (comma-separated).
+    #[arg(long = "exclude-ext", value_name = "e1,e2,...", value_delimiter = ',')]
+    pub exclude_ext: Vec<String>,
+
+    /// Only count these languages (comma-separated whitelist).
+    #[arg(long = "include-lang", value_name = "L1,L2,...", value_delimiter = ',')]
+    pub include_lang: Vec<String>,
+
+    /// Do not count these languages (comma-separated).
+    #[arg(long = "exclude-lang", value_name = "L1,L2,...", value_delimiter = ',')]
+    pub exclude_lang: Vec<String>,
+
+    /// Skip files larger than this many megabytes while traversing directories.
+    /// Files passed explicitly on the command line are exempt.
+    #[arg(long = "max-file-size", value_name = "MB")]
+    pub max_file_size: Option<f64>,
+
+    /// Aggregate languages below a threshold into an `Other` row.
+    /// Format: `<metric>:<N>[%]` where metric is tokens|files|lines|bytes.
+    #[arg(long = "summary-cutoff", value_name = "X:N")]
+    pub summary_cutoff: Option<String>,
+
+    /// Filename used to determine the language of stdin (`-`) input.
+    #[arg(long = "stdin-name", value_name = "FILE")]
+    pub stdin_name: Option<String>,
+
+    /// Hide elapsed time and processing rates in the scan header
+    /// (makes output deterministic).
+    #[arg(long = "hide-rate")]
+    pub hide_rate: bool,
+
+    /// Per-file detail (expands L3 files / by-file listing).
     #[arg(short = 'v', long)]
     pub verbose: bool,
 
-    /// Show a per-file code listing instead of language aggregation.
+    /// Show a per-file tree view instead of language aggregation.
     #[arg(long = "by-file")]
     pub by_file: bool,
+
+    /// Show a per-file tree view in addition to language aggregation.
+    #[arg(long = "by-file-by-lang")]
+    pub by_file_by_lang: bool,
 
     /// Only emit what the exit code requires.
     #[arg(short = 'q', long)]

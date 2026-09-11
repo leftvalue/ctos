@@ -56,18 +56,25 @@ ctos ./my-project
 # just one model, cloc-style language table
 ctos -m gpt-4o ./src
 
-# per-file breakdown instead of language aggregation
+# multiple paths at once, excluding some directories
+ctos -m gpt-4o --exclude-dir node_modules,target ./src ./docs
+
+# only Python & Rust, sorted by lines
+ctos -m gpt-4o --include-lang Python,Rust --sort lines ./src
+
+# per-file tree view, and cloc-style plain tables
 ctos -m gpt-4o --by-file ./src
+ctos -m gpt-4o --style plain ./src
+
+# Markdown / CSV output; read a snippet from stdin
+ctos -m gpt-4o --format md ./src > report.md
+echo "some text" | ctos -m gpt-4o --stdin-name note.md -
 
 # a skill directory — code table PLUS L1/L2/L3 layer analysis
 ctos -m gpt-4o ./skills/image-gen-retry
 
 # machine-readable output for CI / baselines
 ctos --format json ./skills > report.json
-
-# per-file tree view, and cloc-style plain tables
-ctos -m gpt-4o --by-file ./src
-ctos -m gpt-4o --style plain ./src
 
 # budget gate (see CI section) — exits non-zero when a skill blows its budget
 ctos check ./skills
@@ -313,8 +320,8 @@ ctos models
 ## Commands & options
 
 ```
-ctos <PATH> [OPTIONS]          # default: count
-ctos check <PATH> [OPTIONS]    # budget gate for CI
+ctos <PATH>... [OPTIONS]       # default: count (accepts multiple paths; `-` = stdin)
+ctos check <PATH>... [OPTIONS] # budget gate for CI
 ctos models                    # list registry models & their sources
 ctos calibrate --model <m> <PATH>   # per-layer counts for manual calibration
 ```
@@ -325,16 +332,29 @@ Common options:
 |---|---|---|
 | `-m, --model <name>` | tokenizer to use; repeatable. `-m all` = every model | `qwen3` (see `default_models`) |
 | `-a, --all-models` | use every registered model; unbuildable ones are warned & skipped | off |
-| `--format table\|json` | output format | `table` |
+| `--format table\|json\|md\|csv` | output format | `table` |
 | `--style boxed\|plain` | table style (`plain` = cloc-style three-line tables) | `boxed` |
+| `--sort tokens\|bytes\|lines\|files\|name` | sort language/file rows | `tokens` (desc) |
+| `--summary-cutoff <X:N[%]>` | fold languages below a threshold into `Other` (X = tokens\|files\|lines\|bytes) | none |
+| `--exclude-dir <D1,D2,...>` | prune directories by name | none |
+| `--include-ext` / `--exclude-ext <e1,...>` | filter files by extension (whitelist / blacklist) | none |
+| `--include-lang` / `--exclude-lang <L1,...>` | filter by language (whitelist / blacklist) | none |
+| `--max-file-size <MB>` | skip larger traversed files (explicit paths exempt) | none |
+| `--hide-rate` | hide elapsed time / throughput (deterministic output) | off |
+| `--by-file` | per-file tree view instead of language aggregation | off |
+| `--by-file-by-lang` | per-file tree view **and** language aggregation | off |
+| `--stdin-name <file>` | filename used to pick the language of `-` (stdin) input | — |
 | `-o, --output <path>` | write to a file | stdout |
 | `--baseline <path>` | (`check`) baseline results JSON for growth diffing | none |
 | `--budgets <path>` | custom `budgets.toml` | built-in defaults |
 | `--models-config <path>` | custom `models.toml` | built-in defaults |
 | `--no-ignore` | do not honor `.gitignore` | honored |
 | `-v, --verbose` | per-file L3 detail / config fallbacks | off |
-| `--by-file` | per-file tree view instead of language aggregation | off |
 | `-q, --quiet` | minimal output | off |
+
+Filtering precedence: `exclude` wins over `include`; a non-empty `include`
+list acts as a whitelist. `--summary-cutoff` only affects the language table
+(ignored by the per-file view).
 
 ---
 

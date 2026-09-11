@@ -1,7 +1,7 @@
 //! Orchestration: scan × registry -> unified Report.
 
 use std::collections::BTreeMap;
-use std::path::Path;
+use std::path::PathBuf;
 use std::time::Instant;
 
 use anyhow::Result;
@@ -9,14 +9,14 @@ use anyhow::Result;
 use crate::model::{FileEntry, L3File, LangStat, ModelReport, Report, SkillResult, SkillStatus};
 use crate::skill::{parse_skill_md, SkillParse};
 use crate::tokenizer::{ModelEntry, Registry};
-use crate::walk::{scan, ScannedFile};
+use crate::walk::{scan_many, ScanOpts, ScannedFile};
 
 const SKILL_FILE: &str = "SKILL.md";
 
-/// Compute the full report for a path across all models in the registry.
-pub fn run(root: &Path, registry: &Registry, no_ignore: bool) -> Result<Report> {
+/// Compute the full report for one or more paths across all models.
+pub fn run(paths: &[PathBuf], registry: &Registry, opts: &ScanOpts) -> Result<Report> {
     let start = Instant::now();
-    let scanned = scan(root, no_ignore)?;
+    let scanned = scan_many(paths, opts)?;
 
     let files_scanned = scanned.files.len();
     let binary_files = scanned.files.iter().filter(|f| f.is_binary).count();
@@ -31,7 +31,7 @@ pub fn run(root: &Path, registry: &Registry, no_ignore: bool) -> Result<Report> 
     Ok(Report {
         tool_name: "ctos".to_string(),
         tool_version: env!("CARGO_PKG_VERSION").to_string(),
-        root: scanned.root,
+        roots: scanned.roots,
         models: registry.models.iter().map(|m| m.name.clone()).collect(),
         reports,
         files_scanned,

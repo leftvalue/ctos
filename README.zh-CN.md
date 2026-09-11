@@ -52,11 +52,19 @@ ctos ./my-project
 # 只用一个模型，cloc 风格按语言聚合
 ctos -m gpt-4o ./src
 
-# 逐文件明细（树形展示），而非按语言聚合
-ctos -m gpt-4o --by-file ./src
+# 一次传入多个路径，并排除若干目录
+ctos -m gpt-4o --exclude-dir node_modules,target ./src ./docs
 
-# cloc 风格的三线表
+# 只统计 Python 与 Rust，按行数排序
+ctos -m gpt-4o --include-lang Python,Rust --sort lines ./src
+
+# 逐文件树形展示，以及 cloc 风格三线表
+ctos -m gpt-4o --by-file ./src
 ctos -m gpt-4o --style plain ./src
+
+# Markdown / CSV 输出；从 stdin 读取一段文本
+ctos -m gpt-4o --format md ./src > report.md
+echo "some text" | ctos -m gpt-4o --stdin-name note.md -
 
 # 一个 skill 目录 —— 代码表 + L1/L2/L3 分层分析
 ctos -m gpt-4o ./skills/image-gen-retry
@@ -269,7 +277,9 @@ ctos models
 
 ```
 ctos <PATH> [OPTIONS]          # 默认：count 统计
-ctos check <PATH> [OPTIONS]    # CI 预算门禁
+```
+ctos <PATH>... [OPTIONS]       # 默认：count 统计（可传多个路径；`-` = stdin）
+ctos check <PATH>... [OPTIONS] # CI 预算门禁
 ctos models                    # 列出注册表模型及其来源
 ctos calibrate --model <m> <PATH>   # 输出各层计数，供人工校准
 ```
@@ -280,16 +290,27 @@ ctos calibrate --model <m> <PATH>   # 输出各层计数，供人工校准
 |---|---|---|
 | `-m, --model <name>` | 使用的 tokenizer，可重复指定；`-m all` = 全部模型 | `qwen3`（见 `default_models`） |
 | `-a, --all-models` | 使用注册表全部模型；无法加载的模型会 warning 并跳过 | 关闭 |
-| `--format table\|json` | 输出格式 | `table` |
+| `--format table\|json\|md\|csv` | 输出格式 | `table` |
 | `--style boxed\|plain` | 表格风格（`plain` = cloc 风格三线表） | `boxed` |
+| `--sort tokens\|bytes\|lines\|files\|name` | 语言/文件行的排序键 | `tokens`（降序） |
+| `--summary-cutoff <X:N[%]>` | 把低于阈值的语言并入 `Other`（X = tokens\|files\|lines\|bytes） | 无 |
+| `--exclude-dir <D1,D2,...>` | 按目录名排除子树 | 无 |
+| `--include-ext` / `--exclude-ext <e1,...>` | 按扩展名过滤（白名单 / 黑名单） | 无 |
+| `--include-lang` / `--exclude-lang <L1,...>` | 按语言过滤（白名单 / 黑名单） | 无 |
+| `--max-file-size <MB>` | 遍历时跳过超大文件（命令行显式路径豁免） | 无 |
+| `--hide-rate` | 隐藏耗时/吞吐（输出确定性可复现） | 关闭 |
+| `--by-file` | 逐文件树形展示，而非按语言聚合 | 关闭 |
+| `--by-file-by-lang` | 逐文件树形展示 **加** 语言聚合 | 关闭 |
+| `--stdin-name <file>` | 用于判定 `-`（stdin）输入语言的文件名 | — |
 | `-o, --output <path>` | 输出到文件 | stdout |
 | `--baseline <path>` | （`check`）用于涨幅对比的 baseline 结果 JSON | 无 |
 | `--budgets <path>` | 自定义 `budgets.toml` | 内置默认 |
 | `--models-config <path>` | 自定义 `models.toml` | 内置默认 |
 | `--no-ignore` | 不尊重 `.gitignore` | 尊重 |
 | `-v, --verbose` | 逐文件 L3 明细 / 配置回落提示 | 关闭 |
-| `--by-file` | 逐文件树形展示，而非按语言聚合 | 关闭 |
 | `-q, --quiet` | 最简输出 | 关闭 |
+
+过滤优先级：`exclude` 优先于 `include`；非空的 `include` 列表作为白名单。`--summary-cutoff` 只作用于语言聚合表（逐文件视图忽略）。
 
 ---
 

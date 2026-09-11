@@ -183,12 +183,23 @@ fn pad(_unused: &str, val: &str, width: usize, align: Align) -> String {
 // Header / banners.
 // ---------------------------------------------------------------------------
 
-fn header_line(report: &Report) -> String {
+fn header_line(report: &Report, hide_rate: bool) -> String {
+    let root_display = match report.roots.len() {
+        0 => "(none)".to_string(),
+        1 => report.roots[0].display().to_string(),
+        n => {
+            let joined = report
+                .roots
+                .iter()
+                .map(|p| p.display().to_string())
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("{n} paths: {joined}")
+        }
+    };
     let mut out = format!(
         "{} v{} — count tokens of skill\nroot: {}\n",
-        report.tool_name,
-        report.tool_version,
-        report.root.display()
+        report.tool_name, report.tool_version, root_display,
     );
 
     let text_files = report.files_scanned.saturating_sub(report.binary_files);
@@ -197,14 +208,22 @@ fn header_line(report: &Report) -> String {
         report.files_scanned, text_files, report.binary_files
     ));
 
-    // cloc-style stats line: version, wall time, throughput.
-    let secs = report.elapsed_secs.max(1e-9);
-    let files_per_s = report.files_scanned as f64 / secs;
-    let lines_per_s = report.total_lines as f64 / secs;
-    out.push_str(&format!(
-        "github.com/leftvalue/ctos v{}  T={:.2} s ({:.1} files/s, {:.1} lines/s)\n",
-        report.tool_version, report.elapsed_secs, files_per_s, lines_per_s,
-    ));
+    // cloc-style stats line: version, wall time, throughput. Suppressed under
+    // --hide-rate for deterministic output.
+    if hide_rate {
+        out.push_str(&format!(
+            "github.com/leftvalue/ctos v{}\n",
+            report.tool_version
+        ));
+    } else {
+        let secs = report.elapsed_secs.max(1e-9);
+        let files_per_s = report.files_scanned as f64 / secs;
+        let lines_per_s = report.total_lines as f64 / secs;
+        out.push_str(&format!(
+            "github.com/leftvalue/ctos v{}  T={:.2} s ({:.1} files/s, {:.1} lines/s)\n",
+            report.tool_version, report.elapsed_secs, files_per_s, lines_per_s,
+        ));
+    }
     out
 }
 
@@ -217,7 +236,7 @@ fn model_banner(mr: &ModelReport) -> String {
 // Tables.
 // ---------------------------------------------------------------------------
 
-fn language_grid(mr: &ModelReport) -> Grid {
+fn language_grid(mr: &ModelReport, opts: RenderOpts) -> Grid {
     let mut g = Grid::new(vec![
         ("Language", Align::Left),
         ("files", Align::Right),
@@ -225,7 +244,7 @@ fn language_grid(mr: &ModelReport) -> Grid {
         ("bytes", Align::Right),
         ("tokens", Align::Right),
     ]);
-    for l in &mr.languages {
+    for l in &super::processed_languages(mr, opts) {
         g.row([
             l.language.clone(),
             group_int(l.files as u64),
@@ -335,7 +354,7 @@ fn render_skill_section(mr: &ModelReport, style: TableStyle, verbose: bool) -> S
 pub fn render(report: &Report, opts: RenderOpts) -> String {
     let mut out = String::new();
     if !opts.quiet {
-        out.push_str(&header_line(report));
+        out.push_str(&header_line(report, opts.hide_rate));
     }
 
     for mr in &report.reports {
@@ -343,10 +362,16 @@ pub fn render(report: &Report, opts: RenderOpts) -> String {
         out.push_str(&model_banner(mr));
         out.push('\n');
 
-        if opts.by_file {
+        if opts.by_file && !opts.by_file_by_lang {
+            // by-file only.
             out.push_str(&super::tree::render_by_file_tree(mr));
+        } else if opts.by_file_by_lang {
+            // Both: tree first, then the language aggregation table.
+            out.push_str(&super::tree::render_by_file_tree(mr));
+            out.push('\n');
+            out.push_str(&language_grid(mr, opts).render(opts.style));
         } else {
-            out.push_str(&language_grid(mr).render(opts.style));
+            out.push_str(&language_grid(mr, opts).render(opts.style));
         }
         out.push('\n');
 
