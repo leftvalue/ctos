@@ -142,6 +142,33 @@ Not published yet (`publish = false`). If/when published:
 cargo install ctos
 ```
 
+### Option 5 — Docker (no toolchain, no install)
+
+A tiny (~35 MB) `scratch`-based image with a fully static binary and the builtin
+tokenizers baked in. Mount your project and pass paths under the mount point:
+
+```bash
+# build locally
+docker build -t ctos .
+
+# or pull the published image
+docker pull ghcr.io/leftvalue/ctos:latest
+
+# count the current directory
+docker run --rm -v "$PWD:/work" ghcr.io/leftvalue/ctos /work
+
+# a specific model + skill budget gate (exit code is preserved for CI)
+docker run --rm -v "$PWD:/work" ghcr.io/leftvalue/ctos -m gpt-4o /work/skills
+docker run --rm -v "$PWD:/work" ghcr.io/leftvalue/ctos check /work/skills
+
+# meta commands
+docker run --rm ghcr.io/leftvalue/ctos --version
+docker run --rm ghcr.io/leftvalue/ctos models
+```
+
+> The container's working directory is `/work`; mount your project there and use
+> `/work/...` paths. The image has no shell — `ctos` is the entrypoint.
+
 ### Cutting a release (maintainers)
 
 Pushing code alone does **not** create binaries. The release workflow triggers on
@@ -152,9 +179,10 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-GitHub Actions then vendors the tokenizers, cross-compiles all six targets, and
-attaches the binaries to a GitHub Release. (`ci.yml` — fmt/clippy/test — runs on
-every push/PR; only `release.yml` needs a tag.)
+GitHub Actions then vendors the tokenizers, cross-compiles all six targets,
+attaches the binaries to a GitHub Release, and builds & pushes the Docker image to
+`ghcr.io/leftvalue/ctos` (tagged with the version and `latest`). (`ci.yml` —
+fmt/clippy/test — runs on every push/PR; only `release.yml` needs a tag.)
 
 ---
 
