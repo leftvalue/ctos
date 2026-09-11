@@ -1,5 +1,7 @@
 # ctos
 
+**English** | [简体中文](README.zh-CN.md)
+
 **count tokens of skill** — a cloc-style, cross-platform token counter for Agent Skills and source code.
 
 > ⚠️ *not related to Watch Dogs' ctOS.*
