@@ -127,17 +127,17 @@ File                      Language  lines  bytes  tokens
 
 ### 方式 1 —— 下载预编译二进制（无需工具链）
 
-预编译的静态二进制发布在 **[Releases](../../releases)** 页面，覆盖六个目标平台（Linux x86_64/aarch64、macOS x86_64/arm64、Windows x86_64）：
+预编译的静态二进制发布在 **[Releases](../../releases)** 页面，覆盖六个目标平台（Linux x86_64/aarch64、macOS x86_64/arm64、Windows x86_64），以压缩包形式提供：
 
 ```bash
 # Linux/macOS 示例
-curl -L -o ctos https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-unknown-linux-musl
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-unknown-linux-musl.tar.gz | tar xz
 chmod +x ctos
 sudo mv ctos /usr/local/bin/         # 或放到 PATH 上任意位置
 ctos --version
 ```
 
-Windows 下载 `ctos-x86_64-pc-windows-msvc.exe` 放到 PATH 即可。
+Windows 下载 `ctos-x86_64-pc-windows-msvc.zip`，解压后把 `ctos.exe` 放到 PATH 即可。
 
 > Release 只有在维护者推送版本 tag 后才会出现 —— 见[发布流程](#发布流程维护者)。
 
@@ -468,6 +468,15 @@ cargo test --all-features   # 单元 + golden + 退出码 测试
 ```
 
 跨平台静态二进制由 release 工作流用 [`cargo-zigbuild`](https://github.com/rust-cross/cargo-zigbuild) 为六个目标产出（Linux x86_64/aarch64 musl、macOS x86_64/arm64、Windows x86_64）。
+
+本地打包构建：
+
+```bash
+scripts/build-release.sh                        # 主机目标 -> ctos-<arch>-<os>.tar.gz
+scripts/build-release.sh x86_64-unknown-linux-musl
+```
+
+**二进制体积：** 内置的 tokenizer 以 **gzip 压缩** 形式嵌入、按需解压，因此二进制既自带离线数据又保持精简（约为朴素构建的一半）。
 
 Feature 开关：`hf`（HuggingFace `tokenizers`，用于 `builtin:`/`file:`）与 `tiktoken`（OpenAI 编码）默认都开启；`claude-approx` 两者都不需要。如不需要某个功能，可关闭对应 feature 以缩小二进制。
 

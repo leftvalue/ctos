@@ -5,9 +5,10 @@
 //!   * `tokenizer.json`  → HuggingFace `tokenizers` (Qwen3, DeepSeek-V3, …)
 //!   * `tiktoken.model`  → tiktoken-rs, with a per-key split pattern (Kimi-K2)
 
+use std::io::Read;
 use std::sync::Arc;
 
-use anyhow::{bail, Result};
+use anyhow::{bail, Context, Result};
 
 use super::hf::HfTokenizer;
 #[cfg(feature = "tiktoken")]
@@ -15,6 +16,15 @@ use super::tiktoken::TiktokenTokenizer;
 use super::Tokenizer;
 
 include!(concat!(env!("OUT_DIR"), "/builtin_data.rs"));
+
+/// Decompress a gzip blob embedded at build time.
+fn gunzip(gz: &[u8]) -> Result<Vec<u8>> {
+    let mut out = Vec::new();
+    flate2::read::GzDecoder::new(gz)
+        .read_to_end(&mut out)
+        .context("failed to decompress embedded tokenizer")?;
+    Ok(out)
+}
 
 /// The tiktoken split pattern for a builtin tiktoken-model key.
 ///
@@ -48,17 +58,19 @@ fn tiktoken_pattern(key: &str) -> Option<&'static str> {
 
 pub fn load(name: &str, key: &str) -> Result<Arc<dyn Tokenizer>> {
     // Prefer a HuggingFace tokenizer.json when present.
-    if let Some(bytes) = builtin_tokenizer_bytes(key) {
-        return Ok(Arc::new(HfTokenizer::from_bytes(name, "builtin", bytes)?));
+    if let Some(gz) = builtin_tokenizer_gz(key) {
+        let bytes = gunzip(gz)?;
+        return Ok(Arc::new(HfTokenizer::from_bytes(name, "builtin", &bytes)?));
     }
 
     // Otherwise try a vendored tiktoken.model with a known per-key pattern.
     #[cfg(feature = "tiktoken")]
-    if let Some(bytes) = builtin_tiktoken_model_bytes(key) {
+    if let Some(gz) = builtin_tiktoken_model_gz(key) {
+        let bytes = gunzip(gz)?;
         match tiktoken_pattern(key) {
             Some(pattern) => {
                 return Ok(Arc::new(TiktokenTokenizer::from_model_bytes(
-                    name, "builtin", bytes, pattern,
+                    name, "builtin", &bytes, pattern,
                 )?));
             }
             None => bail!(

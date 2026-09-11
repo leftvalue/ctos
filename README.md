@@ -136,17 +136,19 @@ the single heaviest skill body that a trigger can pull in).
 ### Option 1 — download a prebuilt binary (no toolchain needed)
 
 Prebuilt static binaries are published on the **[Releases](../../releases)** page
-for six targets (Linux x86_64/aarch64, macOS x86_64/arm64, Windows x86_64):
+for six targets (Linux x86_64/aarch64, macOS x86_64/arm64, Windows x86_64),
+packaged as compressed archives:
 
 ```bash
 # Linux/macOS example
-curl -L -o ctos https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-unknown-linux-musl
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-unknown-linux-musl.tar.gz | tar xz
 chmod +x ctos
 sudo mv ctos /usr/local/bin/         # or anywhere on your PATH
 ctos --version
 ```
 
-On Windows, download `ctos-x86_64-pc-windows-msvc.exe` and put it on your PATH.
+On Windows, download `ctos-x86_64-pc-windows-msvc.zip`, unzip it, and put
+`ctos.exe` on your PATH.
 
 > Releases appear only after a maintainer pushes a version tag — see
 > [Cutting a release](#cutting-a-release).
@@ -534,6 +536,18 @@ cargo test --all-features   # unit + golden + exit-code tests
 Cross-platform static binaries are produced by the release workflow using
 [`cargo-zigbuild`](https://github.com/rust-cross/cargo-zigbuild) for six targets
 (Linux x86_64/aarch64 musl, macOS x86_64/arm64, Windows x86_64).
+
+For a packaged local build:
+
+```bash
+scripts/build-release.sh                        # host target -> ctos-<arch>-<os>.tar.gz
+scripts/build-release.sh x86_64-unknown-linux-musl
+```
+
+**Binary size:** the vendored tokenizers are embedded **gzip-compressed** and
+decompressed on demand, so the binary stays self-contained yet compact (about
+half the size of a naive build). `--format`/feature flags below let you trim it
+further.
 
 Feature flags: `hf` (HuggingFace `tokenizers`, for `builtin:`/`file:`) and
 `tiktoken` (OpenAI encodings) are both on by default; `claude-approx` needs

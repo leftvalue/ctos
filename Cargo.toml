@@ -24,8 +24,8 @@ path = "src/main.rs"
 # claude-approx works without any feature. Keeping both on by default satisfies
 # the "offline builtin tokenizer" hard requirement from the spec.
 default = ["hf", "tiktoken"]
-hf = ["dep:tokenizers"]
-tiktoken = ["dep:tiktoken-rs", "dep:base64", "dep:rustc-hash"]
+hf = ["dep:tokenizers", "dep:flate2"]
+tiktoken = ["dep:tiktoken-rs", "dep:base64", "dep:rustc-hash", "dep:flate2"]
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
@@ -40,11 +40,19 @@ tokenizers = { version = "0.21", default-features = false, features = ["onig"], 
 tiktoken-rs = { version = "0.6", optional = true }
 base64 = { version = "0.22", optional = true }
 rustc-hash = { version = "1.1", optional = true }
+# Pure-Rust (miniz_oxide) gzip; decompresses the embedded builtin tokenizers.
+# Only needed when a builtin/file HF tokenizer or tiktoken model is bundled.
+flate2 = { version = "1", optional = true }
+
+[build-dependencies]
+# Compress vendored tokenizer files at build time (pure Rust, clean cross-compile).
+flate2 = "1"
 
 [dev-dependencies]
 serde_json = "1"
 
 [profile.release]
+opt-level = "s"
 strip = true
 lto = "thin"
 codegen-units = 1

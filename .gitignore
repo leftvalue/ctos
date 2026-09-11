@@ -7,3 +7,7 @@
 # via scripts/fetch-tokenizers.sh and tokenizers/checksums.sha256.
 # Note: they live permanently in git history; large opt-in models can instead be
 # fetched at build time if you prefer to keep the repo lean.
+
+# Release archives produced by scripts/build-release.sh
+/ctos-*.tar.gz
+/ctos-*.zip

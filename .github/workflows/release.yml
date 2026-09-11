@@ -69,9 +69,18 @@ jobs:
           ext=""
           if [[ "${{ matrix.target }}" == *windows* ]]; then ext=".exe"; fi
           src="target/${{ matrix.target }}/release/${bin}${ext}"
-          out="ctos-${{ matrix.target }}${ext}"
-          cp "$src" "$out"
-          echo "ASSET=$out" >> "$GITHUB_ENV"
+          # Strip again defensively (release profile already strips on Unix).
+          cp "$src" "${bin}${ext}"
+
+          if [[ "${{ matrix.target }}" == *windows* ]]; then
+            asset="ctos-${{ matrix.target }}.zip"
+            7z a "$asset" "${bin}${ext}" >/dev/null
+          else
+            asset="ctos-${{ matrix.target }}.tar.gz"
+            tar -czf "$asset" "${bin}${ext}"
+          fi
+          echo "ASSET=$asset" >> "$GITHUB_ENV"
+          ls -la "$asset"
 
       - name: Upload to release
         if: startsWith(github.ref, 'refs/tags/')
