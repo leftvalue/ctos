@@ -20,6 +20,8 @@ pub struct ScannedFile {
     pub language: String,
     pub bytes: u64,
     pub is_binary: bool,
+    /// Physical line count for text files; `None` for binary.
+    pub lines: Option<u64>,
     /// UTF-8 (lossy) content for text files; `None` for binary.
     pub content: Option<String>,
 }
@@ -107,6 +109,8 @@ pub fn scan(root: &Path, no_ignore: bool) -> Result<Scan> {
         } else {
             Some(String::from_utf8_lossy(&raw).into_owned())
         };
+        // Physical line count (like cloc): number of lines in the text.
+        let lines = content.as_ref().map(|c| c.lines().count() as u64);
 
         if file_name == SKILL_FILE {
             if let Some(parent) = path.parent() {
@@ -123,6 +127,7 @@ pub fn scan(root: &Path, no_ignore: bool) -> Result<Scan> {
             language,
             bytes,
             is_binary,
+            lines,
             content,
         });
     }

@@ -65,6 +65,10 @@ ctos -m gpt-4o ./skills/image-gen-retry
 # machine-readable output for CI / baselines
 ctos --format json ./skills > report.json
 
+# per-file tree view, and cloc-style plain tables
+ctos -m gpt-4o --by-file ./src
+ctos -m gpt-4o --style plain ./src
+
 # budget gate (see CI section) — exits non-zero when a skill blows its budget
 ctos check ./skills
 ```
@@ -74,16 +78,18 @@ Example (language aggregation + skill layers):
 ```
 ctos v0.1.0 — count tokens of skill
 root: /repo/skills
+      7 files scanned.  (6 text, 1 binary)
+github.com/leftvalue/ctos v0.1.0  T=0.02 s (350.0 files/s, 8100.0 lines/s)
 
 tokenizer: gpt-4o (tiktoken)
-┌──────────┬───────┬─────────┬─────────┐
-│ Language ┆ files ┆   bytes ┆  tokens │
-╞══════════╪═══════╪═════════╪═════════╡
-│ Markdown ┆     4 ┆  48.2 KB ┆  12,044 │
-│ Python   ┆     2 ┆   3.1 KB ┆     812 │
-│ Image    ┆     1 ┆ 120.0 KB ┆       0 │
-│ SUM      ┆     7 ┆ 171.3 KB ┆  12,856 │
-└──────────┴───────┴─────────┴─────────┘
+┌──────────┬───────┬───────┬─────────┬─────────┐
+│ Language ┆ files ┆ lines ┆   bytes ┆  tokens │
+╞══════════╪═══════╪═══════╪═════════╪═════════╡
+│ Markdown ┆     4 ┆   612 ┆  48.2 KB ┆  12,044 │
+│ Python   ┆     2 ┆    98 ┆   3.1 KB ┆     812 │
+│ Image    ┆     1 ┆     - ┆ 120.0 KB ┆       0 │
+│ SUM      ┆     7 ┆   710 ┆ 171.3 KB ┆  12,856 │
+└──────────┴───────┴───────┴─────────┴─────────┘
 
 Skill layers (L1 metadata / L2 body / L3 assets):
 ┌────────────────────────┬─────┬───────┬─────────┬───────────┬────────┐
@@ -95,7 +101,24 @@ Skill layers (L1 metadata / L2 body / L3 assets):
 resident L1 total: 92 tok  →  peak injection: 3,504 tok
 ```
 
-The last line is what capacity planning actually cares about: **resident cost**
+`--style plain` renders cloc-style three-line tables instead, and `--by-file`
+shows a `tree(1)`-style hierarchy:
+
+```
+File                      Language  lines  bytes  tokens
+└── skills/
+    ├── alpha/
+    │   ├── references/
+    │   │   └── guide.md  Markdown      3   87 B      21
+    │   └── SKILL.md      Markdown      8  246 B      58
+    └── beta/
+        └── SKILL.md      Markdown      4   82 B      19
+
+5 files · 22 lines · 551 B · 127 tokens
+```
+
+The scan header (files scanned, version, throughput) mirrors cloc. The last
+skill line is what capacity planning actually cares about: **resident cost**
 (every skill's L1 is always in context) and **peak injection cost** (resident +
 the single heaviest skill body that a trigger can pull in).
 
@@ -196,10 +219,10 @@ fmt/clippy/test — runs on every push/PR; only `release.yml` needs a tag.)
 
 `ctos` walks the path (honoring `.gitignore`, like ripgrep) and, for every file:
 
-| File kind | tokens | bytes | language |
-|---|---|---|---|
-| Plain text (code, markdown, config, …) | ✅ counted per model | ✅ | mapped by extension |
-| Binary (images, fonts, archives, `.bin`, …) | — (skipped) | ✅ | best-effort label |
+| File kind | tokens | lines | bytes | language |
+|---|---|---|---|---|
+| Plain text (code, markdown, config, …) | ✅ counted per model | ✅ physical lines | ✅ | mapped by extension |
+| Binary (images, fonts, archives, `.bin`, …) | — (skipped) | — | ✅ | best-effort label |
 
 - **Text vs binary** is sniffed from a head sample (NUL byte or largely-invalid
   UTF-8 ⇒ binary).
@@ -303,13 +326,14 @@ Common options:
 | `-m, --model <name>` | tokenizer to use; repeatable. `-m all` = every model | `qwen3` (see `default_models`) |
 | `-a, --all-models` | use every registered model; unbuildable ones are warned & skipped | off |
 | `--format table\|json` | output format | `table` |
+| `--style boxed\|plain` | table style (`plain` = cloc-style three-line tables) | `boxed` |
 | `-o, --output <path>` | write to a file | stdout |
 | `--baseline <path>` | (`check`) baseline results JSON for growth diffing | none |
 | `--budgets <path>` | custom `budgets.toml` | built-in defaults |
 | `--models-config <path>` | custom `models.toml` | built-in defaults |
 | `--no-ignore` | do not honor `.gitignore` | honored |
 | `-v, --verbose` | per-file L3 detail / config fallbacks | off |
-| `--by-file` | per-file code listing instead of language aggregation | off |
+| `--by-file` | per-file tree view instead of language aggregation | off |
 | `-q, --quiet` | minimal output | off |
 
 ---

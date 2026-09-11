@@ -70,6 +70,7 @@ fn render_opts(args: &CommonArgs) -> RenderOpts {
         verbose: args.verbose,
         by_file: args.by_file,
         quiet: args.quiet,
+        style: args.style,
     }
 }
 

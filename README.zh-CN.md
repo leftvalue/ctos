@@ -52,8 +52,11 @@ ctos ./my-project
 # 只用一个模型，cloc 风格按语言聚合
 ctos -m gpt-4o ./src
 
-# 逐文件明细，而非按语言聚合
+# 逐文件明细（树形展示），而非按语言聚合
 ctos -m gpt-4o --by-file ./src
+
+# cloc 风格的三线表
+ctos -m gpt-4o --style plain ./src
 
 # 一个 skill 目录 —— 代码表 + L1/L2/L3 分层分析
 ctos -m gpt-4o ./skills/image-gen-retry
@@ -70,16 +73,18 @@ ctos check ./skills
 ```
 ctos v0.1.0 — count tokens of skill
 root: /repo/skills
+      7 files scanned.  (6 text, 1 binary)
+github.com/leftvalue/ctos v0.1.0  T=0.02 s (350.0 files/s, 8100.0 lines/s)
 
 tokenizer: gpt-4o (tiktoken)
-┌──────────┬───────┬─────────┬─────────┐
-│ Language ┆ files ┆   bytes ┆  tokens │
-╞══════════╪═══════╪═════════╪═════════╡
-│ Markdown ┆     4 ┆  48.2 KB ┆  12,044 │
-│ Python   ┆     2 ┆   3.1 KB ┆     812 │
-│ Image    ┆     1 ┆ 120.0 KB ┆       0 │
-│ SUM      ┆     7 ┆ 171.3 KB ┆  12,856 │
-└──────────┴───────┴─────────┴─────────┘
+┌──────────┬───────┬───────┬─────────┬─────────┐
+│ Language ┆ files ┆ lines ┆   bytes ┆  tokens │
+╞══════════╪═══════╪═══════╪═════════╪═════════╡
+│ Markdown ┆     4 ┆   612 ┆  48.2 KB ┆  12,044 │
+│ Python   ┆     2 ┆    98 ┆   3.1 KB ┆     812 │
+│ Image    ┆     1 ┆     - ┆ 120.0 KB ┆       0 │
+│ SUM      ┆     7 ┆   710 ┆ 171.3 KB ┆  12,856 │
+└──────────┴───────┴───────┴─────────┴─────────┘
 
 Skill layers (L1 metadata / L2 body / L3 assets):
 ┌────────────────────────┬─────┬───────┬─────────┬───────────┬────────┐
@@ -91,7 +96,22 @@ Skill layers (L1 metadata / L2 body / L3 assets):
 resident L1 total: 92 tok  →  peak injection: 3,504 tok
 ```
 
-最后一行才是容量规划真正关心的：**常驻成本**（每个 skill 的 L1 始终在上下文中）与**峰值注入成本**（常驻 + 某次触发能拉进来的最重那个 skill 正文）。
+`--style plain` 会改用 cloc 风格的三线表，`--by-file` 则以 `tree(1)` 风格展示层级结构：
+
+```
+File                      Language  lines  bytes  tokens
+└── skills/
+    ├── alpha/
+    │   ├── references/
+    │   │   └── guide.md  Markdown      3   87 B      21
+    │   └── SKILL.md      Markdown      8  246 B      58
+    └── beta/
+        └── SKILL.md      Markdown      4   82 B      19
+
+5 files · 22 lines · 551 B · 127 tokens
+```
+
+顶部的扫描概览（扫描文件数、版本、吞吐）对齐 cloc 风格。最后一行才是容量规划真正关心的：**常驻成本**（每个 skill 的 L1 始终在上下文中）与**峰值注入成本**（常驻 + 某次触发能拉进来的最重那个 skill 正文）。
 
 ---
 
@@ -181,10 +201,10 @@ git push origin v0.1.0
 
 `ctos` 遍历路径（像 ripgrep 一样尊重 `.gitignore`），对每个文件：
 
-| 文件类型 | tokens | bytes | 语言 |
-|---|---|---|---|
-| 纯文本（代码、markdown、配置……） | ✅ 按模型计数 | ✅ | 按扩展名映射 |
-| 二进制（图片、字体、压缩包、`.bin`……） | —（跳过） | ✅ | 尽力标注 |
+| 文件类型 | tokens | 行数 | bytes | 语言 |
+|---|---|---|---|---|
+| 纯文本（代码、markdown、配置……） | ✅ 按模型计数 | ✅ 物理行数 | ✅ | 按扩展名映射 |
+| 二进制（图片、字体、压缩包、`.bin`……） | —（跳过） | — | ✅ | 尽力标注 |
 
 - **文本 vs 二进制**：通过头部采样判断（含 NUL 字节或大部分不是合法 UTF-8 ⇒ 二进制）。
 - 文件按 UTF-8 读取；非法字节替换为 `U+FFFD` 并计入 —— `ctos` 绝不会因编码问题 panic。
@@ -261,13 +281,14 @@ ctos calibrate --model <m> <PATH>   # 输出各层计数，供人工校准
 | `-m, --model <name>` | 使用的 tokenizer，可重复指定；`-m all` = 全部模型 | `qwen3`（见 `default_models`） |
 | `-a, --all-models` | 使用注册表全部模型；无法加载的模型会 warning 并跳过 | 关闭 |
 | `--format table\|json` | 输出格式 | `table` |
+| `--style boxed\|plain` | 表格风格（`plain` = cloc 风格三线表） | `boxed` |
 | `-o, --output <path>` | 输出到文件 | stdout |
 | `--baseline <path>` | （`check`）用于涨幅对比的 baseline 结果 JSON | 无 |
 | `--budgets <path>` | 自定义 `budgets.toml` | 内置默认 |
 | `--models-config <path>` | 自定义 `models.toml` | 内置默认 |
 | `--no-ignore` | 不尊重 `.gitignore` | 尊重 |
 | `-v, --verbose` | 逐文件 L3 明细 / 配置回落提示 | 关闭 |
-| `--by-file` | 逐文件代码清单，而非按语言聚合 | 关闭 |
+| `--by-file` | 逐文件树形展示，而非按语言聚合 | 关闭 |
 | `-q, --quiet` | 最简输出 | 关闭 |
 
 ---

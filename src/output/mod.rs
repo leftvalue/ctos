@@ -2,13 +2,14 @@
 
 pub mod json;
 pub mod table;
+pub mod tree;
 
 use std::io::Write;
 use std::path::Path;
 
 use anyhow::{Context, Result};
 
-use crate::cli::Format;
+use crate::cli::{Format, TableStyle};
 use crate::model::Report;
 
 /// Options that affect rendering.
@@ -17,6 +18,7 @@ pub struct RenderOpts {
     pub verbose: bool,
     pub by_file: bool,
     pub quiet: bool,
+    pub style: TableStyle,
 }
 
 /// Render a report to the chosen format and write to stdout or a file.

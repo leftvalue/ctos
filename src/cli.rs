@@ -27,6 +27,15 @@ pub enum Format {
     Json,
 }
 
+/// Visual style for `table` output.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
+pub enum TableStyle {
+    /// Full box-drawing borders (default).
+    Boxed,
+    /// cloc-style: no outer box, dashed rules between sections.
+    Plain,
+}
+
 /// Options shared by `count` (default) and `check`.
 #[derive(Debug, Clone, Args)]
 pub struct CommonArgs {
@@ -47,6 +56,10 @@ pub struct CommonArgs {
     /// Output format.
     #[arg(long, value_enum, default_value_t = Format::Table)]
     pub format: Format,
+
+    /// Table style for `--format table`.
+    #[arg(long, value_enum, default_value_t = TableStyle::Boxed)]
+    pub style: TableStyle,
 
     /// Write output to a file instead of stdout.
     #[arg(short = 'o', long, value_name = "PATH")]

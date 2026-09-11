@@ -38,6 +38,7 @@ struct SkillResultJson {
 struct LangJson {
     language: String,
     files: usize,
+    lines: u64,
     bytes: u64,
     tokens: f64,
 }
@@ -48,6 +49,7 @@ struct CodeFileJson {
     language: String,
     bytes: u64,
     is_binary: bool,
+    lines: Option<u64>,
     tokens: Option<f64>,
 }
 
@@ -114,6 +116,7 @@ fn code_block(mr: &ModelReport) -> CodeBlockJson {
             .map(|l| LangJson {
                 language: l.language.clone(),
                 files: l.files,
+                lines: l.lines,
                 bytes: l.bytes,
                 tokens: l.tokens,
             })
@@ -126,6 +129,7 @@ fn code_block(mr: &ModelReport) -> CodeBlockJson {
                 language: f.language.clone(),
                 bytes: f.bytes,
                 is_binary: f.is_binary,
+                lines: f.lines,
                 tokens: f.tokens,
             })
             .collect(),

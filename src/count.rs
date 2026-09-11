@@ -2,6 +2,7 @@
 
 use std::collections::BTreeMap;
 use std::path::Path;
+use std::time::Instant;
 
 use anyhow::Result;
 
@@ -14,7 +15,12 @@ const SKILL_FILE: &str = "SKILL.md";
 
 /// Compute the full report for a path across all models in the registry.
 pub fn run(root: &Path, registry: &Registry, no_ignore: bool) -> Result<Report> {
+    let start = Instant::now();
     let scanned = scan(root, no_ignore)?;
+
+    let files_scanned = scanned.files.len();
+    let binary_files = scanned.files.iter().filter(|f| f.is_binary).count();
+    let total_lines: u64 = scanned.files.iter().filter_map(|f| f.lines).sum();
 
     let mut reports = Vec::with_capacity(registry.models.len());
     for model in &registry.models {
@@ -28,6 +34,10 @@ pub fn run(root: &Path, registry: &Registry, no_ignore: bool) -> Result<Report> 
         root: scanned.root,
         models: registry.models.iter().map(|m| m.name.clone()).collect(),
         reports,
+        files_scanned,
+        binary_files,
+        total_lines,
+        elapsed_secs: start.elapsed().as_secs_f64(),
     })
 }
 
@@ -53,6 +63,7 @@ fn compute_model_report(
             language: f.language.clone(),
             bytes: f.bytes,
             is_binary: f.is_binary,
+            lines: f.lines,
             tokens,
         };
         let ls = lang_map
@@ -60,10 +71,12 @@ fn compute_model_report(
             .or_insert_with(|| LangStat {
                 language: f.language.clone(),
                 files: 0,
+                lines: 0,
                 bytes: 0,
                 tokens: 0.0,
             });
         ls.files += 1;
+        ls.lines += f.lines.unwrap_or(0);
         ls.bytes += f.bytes;
         ls.tokens += tokens.unwrap_or(0.0);
         file_entries.push(entry);

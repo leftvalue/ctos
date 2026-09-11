@@ -61,12 +61,14 @@
         {
           "language": "Markdown",
           "files": 4,
+          "lines": 21,
           "bytes": 527,
           "tokens": 120.0
         },
         {
           "language": "Python",
           "files": 1,
+          "lines": 1,
           "bytes": 24,
           "tokens": 7.0
         }
@@ -77,6 +79,7 @@
           "language": "Markdown",
           "bytes": 246,
           "is_binary": false,
+          "lines": 8,
           "tokens": 58.0
         },
         {
@@ -84,6 +87,7 @@
           "language": "Markdown",
           "bytes": 87,
           "is_binary": false,
+          "lines": 3,
           "tokens": 21.0
         },
         {
@@ -91,6 +95,7 @@
           "language": "Markdown",
           "bytes": 82,
           "is_binary": false,
+          "lines": 4,
           "tokens": 19.0
         },
         {
@@ -98,6 +103,7 @@
           "language": "Python",
           "bytes": 24,
           "is_binary": false,
+          "lines": 1,
           "tokens": 7.0
         },
         {
@@ -105,6 +111,7 @@
           "language": "Markdown",
           "bytes": 112,
           "is_binary": false,
+          "lines": 6,
           "tokens": 22.0
         }
       ]
