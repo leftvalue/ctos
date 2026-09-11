@@ -36,6 +36,9 @@ impl ModelSpec {
 
 #[derive(Debug, Clone, Deserialize)]
 struct ModelsFile {
+    /// Models used when the user does not pass `-m/--model`. Empty ⇒ all models.
+    #[serde(default)]
+    default_models: Vec<String>,
     #[serde(default)]
     models: BTreeMap<String, ModelSpec>,
 }
@@ -44,6 +47,8 @@ struct ModelsFile {
 #[derive(Debug, Clone)]
 pub struct ModelsConfig {
     pub models: Vec<(String, ModelSpec)>,
+    /// Models to use by default; falls back to all models when empty.
+    pub default_models: Vec<String>,
 }
 
 impl ModelsConfig {
@@ -61,7 +66,10 @@ impl ModelsConfig {
         let parsed: ModelsFile = toml::from_str(&text)
             .context("failed to parse models config (expected models.toml schema)")?;
         let models = parsed.models.into_iter().collect();
-        Ok(Self { models })
+        Ok(Self {
+            models,
+            default_models: parsed.default_models,
+        })
     }
 
     pub fn get(&self, name: &str) -> Option<&ModelSpec> {
@@ -70,6 +78,16 @@ impl ModelsConfig {
 
     pub fn names(&self) -> Vec<String> {
         self.models.iter().map(|(n, _)| n.clone()).collect()
+    }
+
+    /// The model names to use when the user selects none. Uses `default_models`
+    /// from config when set, otherwise every registered model.
+    pub fn default_selection(&self) -> Vec<String> {
+        if self.default_models.is_empty() {
+            self.names()
+        } else {
+            self.default_models.clone()
+        }
     }
 }
 
@@ -115,6 +133,12 @@ mod tests {
         assert!(cfg.get("claude").is_some());
         assert_eq!(cfg.get("qwen3").unwrap().overhead_l1(), 24.0);
         assert_eq!(cfg.get("claude").unwrap().chars_per_token(), 4.0);
+    }
+
+    #[test]
+    fn default_selection_is_qwen3() {
+        let cfg = ModelsConfig::load(None, false).unwrap();
+        assert_eq!(cfg.default_selection(), vec!["qwen3".to_string()]);
     }
 
     #[test]

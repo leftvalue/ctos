@@ -11,6 +11,10 @@
 #   overhead_l1      fixed wrapping overhead added to L1 (default 24)
 #   chars_per_token  divisor for claude-approx (default 4.0)
 
+# Models used when the user does not pass -m/--model.
+# Leave empty (default_models = []) to use every registered model instead.
+default_models = ["qwen3"]
+
 [models.qwen3]
 source = "builtin:qwen3"
 overhead_l1 = 24

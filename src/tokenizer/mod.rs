@@ -46,11 +46,13 @@ pub struct Registry {
 }
 
 impl Registry {
-    /// Build a registry from config. When `selected` is empty, all models are
-    /// used; otherwise only the named subset (error on unknown names).
+    /// Build a registry from config. When `selected` is empty, the config's
+    /// default selection is used (a specific default model list, or all models
+    /// if none is configured); otherwise only the named subset (error on
+    /// unknown names).
     pub fn build(cfg: &ModelsConfig, selected: &[String]) -> Result<Self> {
         let names = if selected.is_empty() {
-            cfg.names()
+            cfg.default_selection()
         } else {
             selected.to_vec()
         };

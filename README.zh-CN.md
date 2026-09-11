@@ -229,6 +229,8 @@ skill/
 
 默认注册表（`config/models.toml`）：`qwen3`、`deepseek-v3`、`kimi-k2`、`hunyuan`（均为 `builtin:`）、`gpt-4o`（`tiktoken:o200k_base`）与 `claude`（`claude-approx`）。
 
+> **默认模型：** 当你不传 `-m/--model` 时，`ctos` 使用 `config/models.toml` 里的 `default_models` 列表，出厂值为 `["qwen3"]`（即默认用千问）。把它设为 `default_models = []` 可回落为"用*全部*已注册模型"分别统计，或列出多个名字让多个模型成为默认。
+
 > **关于 Kimi-K2：** 它不发布 HuggingFace `tokenizer.json`；而是提供 `tiktoken.model` BPE 词表加上一个自定义的切分正则。`ctos` 通过 tiktoken-rs 用 Kimi 的**原始**正则（包括其 `&&` 字符集交集子类，`fancy-regex` 能接受）加载该模型，因此计数与模型精确一致且完全离线。
 
 > **关于 Claude：** 没有公开的 Claude tokenizer。`claude` 是一个**近似**（默认 `字符数 / 4.0`），其数字以 `~` 前缀标注。在 `check` 中，近似模型的预算放宽 ×1.1。`ctos` **不**声称精确支持 Claude —— 请对它做校准（见下文）。
@@ -254,7 +256,7 @@ ctos calibrate --model <m> <PATH>   # 输出各层计数，供人工校准
 
 | 选项 | 含义 | 默认 |
 |---|---|---|
-| `-m, --model <name>` | 使用的 tokenizer，可重复指定 | 注册表全部模型 |
+| `-m, --model <name>` | 使用的 tokenizer，可重复指定 | `qwen3`（见 `default_models`） |
 | `--format table\|json` | 输出格式 | `table` |
 | `-o, --output <path>` | 输出到文件 | stdout |
 | `--baseline <path>` | （`check`）用于涨幅对比的 baseline 结果 JSON | 无 |
@@ -345,6 +347,9 @@ jobs:
 **`config/models.toml`** —— 注册表：
 
 ```toml
+# 未指定 -m/--model 时使用的模型（[] 表示用全部已注册模型）
+default_models = ["qwen3"]
+
 [models.qwen3]
 source = "builtin:qwen3"
 overhead_l1 = 24

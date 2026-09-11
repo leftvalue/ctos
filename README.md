@@ -257,6 +257,11 @@ Default registry (`config/models.toml`): `qwen3`, `deepseek-v3`, `kimi-k2`,
 `hunyuan` (all `builtin:`), `gpt-4o` (`tiktoken:o200k_base`), and `claude`
 (`claude-approx`).
 
+> **Default model:** when you don't pass `-m/--model`, `ctos` uses the
+> `default_models` list from `config/models.toml`, which ships as `["qwen3"]`.
+> Set `default_models = []` to fall back to counting under *every* registered
+> model instead, or list several names to make multiple the default.
+
 > **On Kimi-K2:** it does not publish a HuggingFace `tokenizer.json`; it ships a
 > `tiktoken.model` BPE vocab plus a custom split pattern. `ctos` loads that model
 > via tiktoken-rs using Kimi's **original** pattern (including its `&&`
@@ -289,7 +294,7 @@ Common options:
 
 | Option | Meaning | Default |
 |---|---|---|
-| `-m, --model <name>` | tokenizer to use; repeatable | all registry models |
+| `-m, --model <name>` | tokenizer to use; repeatable | `qwen3` (see `default_models`) |
 | `--format table\|json` | output format | `table` |
 | `-o, --output <path>` | write to a file | stdout |
 | `--baseline <path>` | (`check`) baseline results JSON for growth diffing | none |
@@ -385,6 +390,9 @@ custom file is omitted, built-in defaults are used (announced under `-v`).
 **`config/models.toml`** — the registry:
 
 ```toml
+# models used when -m/--model is omitted ([] = all registered models)
+default_models = ["qwen3"]
+
 [models.qwen3]
 source = "builtin:qwen3"
 overhead_l1 = 24
