@@ -1,0 +1,51 @@
+[package]
+name = "ctos"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+description = "count tokens of skill — a cloc-style, cross-platform token counter for Agent Skills and source code"
+authors = ["ctos contributors"]
+license = "GPL-3.0"
+repository = "https://github.com/your-org/ctos"
+homepage = "https://github.com/your-org/ctos"
+readme = "README.md"
+keywords = ["tokens", "tokenizer", "skill", "cloc", "llm"]
+categories = ["command-line-utilities", "development-tools"]
+# Do not publish placeholder metadata by accident.
+publish = false
+
+[[bin]]
+name = "ctos"
+path = "src/main.rs"
+
+[features]
+# `hf` pulls the HuggingFace `tokenizers` crate (builtin: and file: sources).
+# `tiktoken` pulls `tiktoken-rs` (tiktoken: sources, e.g. gpt-4o / o200k_base).
+# claude-approx works without any feature. Keeping both on by default satisfies
+# the "offline builtin tokenizer" hard requirement from the spec.
+default = ["hf", "tiktoken"]
+hf = ["dep:tokenizers"]
+tiktoken = ["dep:tiktoken-rs", "dep:base64", "dep:rustc-hash"]
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+ignore = "0.4"
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+serde_json = "1"
+toml = "0.8"
+comfy-table = "7.1"
+anyhow = "1"
+tokenizers = { version = "0.21", default-features = false, features = ["onig"], optional = true }
+tiktoken-rs = { version = "0.6", optional = true }
+base64 = { version = "0.22", optional = true }
+rustc-hash = { version = "1.1", optional = true }
+
+[dev-dependencies]
+serde_json = "1"
+
+[profile.release]
+strip = true
+lto = "thin"
+codegen-units = 1
+panic = "abort"

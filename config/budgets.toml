@@ -1,0 +1,8 @@
+# Default skill size budgets for `ctos check`.
+# All values may be overridden with a custom file via `--budgets <path>`.
+
+[global]
+l1_max       = 100    # per-skill L1 (metadata) upper bound, in tokens
+l2_max       = 5000   # per-skill L2 (body) upper bound, in tokens
+l1_total_max = 2000   # sum of L1 across all skills (resident context capacity)
+diff_ratio   = 0.15   # with a baseline, L2 growth above this must be justified

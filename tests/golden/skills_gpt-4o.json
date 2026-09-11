@@ -1,0 +1,113 @@
+{
+  "tool": {
+    "name": "ctos",
+    "version": "0.1.0"
+  },
+  "models": [
+    "gpt-4o"
+  ],
+  "results": [
+    {
+      "skill": "alpha",
+      "model": "gpt-4o",
+      "l1": 40.0,
+      "l2": 58.0,
+      "l3_tokens": 21.0,
+      "l3_bytes": 87,
+      "files": [
+        {
+          "path": "skills/alpha/references/guide.md",
+          "tokens": 21.0
+        }
+      ],
+      "status": "OK",
+      "issues": []
+    },
+    {
+      "skill": "beta",
+      "model": "gpt-4o",
+      "l1": 37.0,
+      "l2": 19.0,
+      "l3_tokens": 7.0,
+      "l3_bytes": 24,
+      "files": [
+        {
+          "path": "skills/beta/scripts/tool.py",
+          "tokens": 7.0
+        }
+      ],
+      "status": "OK",
+      "issues": []
+    },
+    {
+      "skill": "broken",
+      "model": "gpt-4o",
+      "l1": 0.0,
+      "l2": 0.0,
+      "l3_tokens": 0.0,
+      "l3_bytes": 0,
+      "files": [],
+      "status": "INVALID",
+      "issues": [
+        "frontmatter missing 'description'"
+      ]
+    }
+  ],
+  "code": [
+    {
+      "model": "gpt-4o",
+      "approx": false,
+      "languages": [
+        {
+          "language": "Markdown",
+          "files": 4,
+          "bytes": 527,
+          "tokens": 120.0
+        },
+        {
+          "language": "Python",
+          "files": 1,
+          "bytes": 24,
+          "tokens": 7.0
+        }
+      ],
+      "files": [
+        {
+          "path": "skills/alpha/SKILL.md",
+          "language": "Markdown",
+          "bytes": 246,
+          "is_binary": false,
+          "tokens": 58.0
+        },
+        {
+          "path": "skills/alpha/references/guide.md",
+          "language": "Markdown",
+          "bytes": 87,
+          "is_binary": false,
+          "tokens": 21.0
+        },
+        {
+          "path": "skills/beta/SKILL.md",
+          "language": "Markdown",
+          "bytes": 82,
+          "is_binary": false,
+          "tokens": 19.0
+        },
+        {
+          "path": "skills/beta/scripts/tool.py",
+          "language": "Python",
+          "bytes": 24,
+          "is_binary": false,
+          "tokens": 7.0
+        },
+        {
+          "path": "skills/broken/SKILL.md",
+          "language": "Markdown",
+          "bytes": 112,
+          "is_binary": false,
+          "tokens": 22.0
+        }
+      ]
+    }
+  ]
+}

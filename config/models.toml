@@ -1,0 +1,37 @@
+# Default model registry for ctos.
+# Each entry maps a friendly model name to a tokenizer source.
+#
+# Sources:
+#   builtin:<key>        vendored tokenizer.json under tokenizers/<key>/ (offline)
+#   file:<path>          any local tokenizer.json (for long-tail / intranet models)
+#   tiktoken:<encoding>  a tiktoken encoding, e.g. o200k_base / cl100k_base
+#   claude-approx        chars / chars_per_token estimate (marked with ~)
+#
+# Optional per-model fields:
+#   overhead_l1      fixed wrapping overhead added to L1 (default 24)
+#   chars_per_token  divisor for claude-approx (default 4.0)
+
+[models.qwen3]
+source = "builtin:qwen3"
+overhead_l1 = 24
+
+[models.deepseek-v3]
+source = "builtin:deepseek-v3"
+overhead_l1 = 24
+
+[models.kimi-k2]
+source = "builtin:kimi-k2"
+overhead_l1 = 24
+
+[models.hunyuan]
+source = "builtin:hunyuan"
+overhead_l1 = 24
+
+[models.gpt-4o]
+source = "tiktoken:o200k_base"
+overhead_l1 = 24
+
+[models.claude]
+source = "claude-approx"
+chars_per_token = 4.0
+overhead_l1 = 24

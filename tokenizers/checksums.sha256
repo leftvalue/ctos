@@ -1,0 +1,11 @@
+# SHA-256 checksums for vendored tokenizer files.
+#
+# Format: "<sha256>  <relative path>" (two spaces), verifiable with:
+#     sha256sum -c tokenizers/checksums.sha256
+#
+# These lock the exact bytes fetched at the pinned revisions in
+# scripts/fetch-tokenizers.sh. If a re-download does not match, the content
+# changed upstream and must be reviewed (token counts may shift).
+aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4  tokenizers/qwen3/tokenizer.json
+621ac2e32d0dba658404412318818aaa8ce8cda492e59830109d8da6b517fb41  tokenizers/deepseek-v3/tokenizer.json
+b6c497a7469b33ced9c38afb1ad6e47f03f5e5dc05f15930799210ec050c5103  tokenizers/kimi-k2/tiktoken.model
