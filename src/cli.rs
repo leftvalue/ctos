@@ -33,9 +33,16 @@ pub struct CommonArgs {
     /// Path to scan (file or directory). Required unless a subcommand is used.
     pub path: Option<PathBuf>,
 
-    /// Tokenizer model to use; repeatable. Defaults to every registry model.
+    /// Tokenizer model to use; repeatable. Defaults to `default_models` from the
+    /// registry (ships as qwen3). Ignored when `--all-models` is set.
     #[arg(short = 'm', long = "model", value_name = "NAME")]
     pub models: Vec<String>,
+
+    /// Use every model in the registry. Models whose tokenizer cannot be loaded
+    /// (e.g. a builtin not vendored in this build) are warned about and skipped
+    /// instead of failing the whole run.
+    #[arg(short = 'a', long = "all-models")]
+    pub all_models: bool,
 
     /// Output format.
     #[arg(long, value_enum, default_value_t = Format::Table)]

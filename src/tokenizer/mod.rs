@@ -9,7 +9,7 @@
 
 use std::sync::Arc;
 
-use anyhow::{anyhow, bail, Result};
+use anyhow::{bail, Result};
 
 use crate::config::{ModelSpec, ModelsConfig};
 
@@ -46,30 +46,63 @@ pub struct Registry {
 }
 
 impl Registry {
-    /// Build a registry from config. When `selected` is empty, the config's
-    /// default selection is used (a specific default model list, or all models
-    /// if none is configured); otherwise only the named subset (error on
-    /// unknown names).
-    pub fn build(cfg: &ModelsConfig, selected: &[String]) -> Result<Self> {
-        let names = if selected.is_empty() {
+    /// Resolve the model names to use.
+    ///
+    /// Precedence: `all_models` (or a lone `-m all`) → every registered model;
+    /// otherwise an explicit `selected` list; otherwise the config default.
+    fn resolve_names(cfg: &ModelsConfig, selected: &[String], all_models: bool) -> Vec<String> {
+        let wants_all =
+            all_models || selected.len() == 1 && selected[0].eq_ignore_ascii_case("all");
+        if wants_all {
+            cfg.names()
+        } else if selected.is_empty() {
             cfg.default_selection()
         } else {
             selected.to_vec()
-        };
+        }
+    }
+
+    /// Build a registry from config.
+    ///
+    /// Models that cannot be built — an unknown name, or a tokenizer that fails
+    /// to load (e.g. a `builtin:` not vendored in this build) — are reported as
+    /// warnings on stderr and skipped, so one bad model never fails the whole
+    /// run. It is an error only if *no* usable model remains.
+    pub fn build(cfg: &ModelsConfig, selected: &[String], all_models: bool) -> Result<Self> {
+        let names = Self::resolve_names(cfg, selected, all_models);
+
         let mut models = Vec::with_capacity(names.len());
+        let mut skipped = 0usize;
         for name in names {
-            let spec = cfg
-                .get(&name)
-                .ok_or_else(|| anyhow!("unknown model '{name}' (not found in registry)"))?;
-            let tokenizer = build_tokenizer(&name, spec)?;
-            models.push(ModelEntry {
-                name,
-                tokenizer,
-                overhead_l1: spec.overhead_l1(),
-            });
+            let spec = match cfg.get(&name) {
+                Some(s) => s,
+                None => {
+                    eprintln!("ctos: warning: unknown model '{name}', skipping");
+                    skipped += 1;
+                    continue;
+                }
+            };
+            match build_tokenizer(&name, spec) {
+                Ok(tokenizer) => models.push(ModelEntry {
+                    name,
+                    tokenizer,
+                    overhead_l1: spec.overhead_l1(),
+                }),
+                Err(e) => {
+                    eprintln!("ctos: warning: skipping model '{name}': {e}");
+                    skipped += 1;
+                }
+            }
         }
         if models.is_empty() {
-            bail!("no models selected and registry is empty");
+            bail!(
+                "no usable tokenizer models{}",
+                if skipped > 0 {
+                    " (all selected models were skipped; see warnings above)"
+                } else {
+                    " selected"
+                }
+            );
         }
         Ok(Self { models })
     }

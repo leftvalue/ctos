@@ -262,6 +262,12 @@ Default registry (`config/models.toml`): `qwen3`, `deepseek-v3`, `kimi-k2`,
 > Set `default_models = []` to fall back to counting under *every* registered
 > model instead, or list several names to make multiple the default.
 
+> **Run every model at once:** pass `--all-models` (or `-m all`) to count under
+> the whole registry in one go. Any model whose tokenizer can't be loaded — for
+> example a `builtin:` that isn't vendored in your build (like `hunyuan` by
+> default) — is reported as a warning on stderr and skipped, so one missing
+> tokenizer never fails the whole run.
+
 > **On Kimi-K2:** it does not publish a HuggingFace `tokenizer.json`; it ships a
 > `tiktoken.model` BPE vocab plus a custom split pattern. `ctos` loads that model
 > via tiktoken-rs using Kimi's **original** pattern (including its `&&`
@@ -294,7 +300,8 @@ Common options:
 
 | Option | Meaning | Default |
 |---|---|---|
-| `-m, --model <name>` | tokenizer to use; repeatable | `qwen3` (see `default_models`) |
+| `-m, --model <name>` | tokenizer to use; repeatable. `-m all` = every model | `qwen3` (see `default_models`) |
+| `-a, --all-models` | use every registered model; unbuildable ones are warned & skipped | off |
 | `--format table\|json` | output format | `table` |
 | `-o, --output <path>` | write to a file | stdout |
 | `--baseline <path>` | (`check`) baseline results JSON for growth diffing | none |

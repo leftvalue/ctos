@@ -62,7 +62,7 @@ fn require_path(args: &CommonArgs) -> Result<&Path> {
 
 fn build_registry(args: &CommonArgs) -> Result<Registry> {
     let models_cfg = ModelsConfig::load(args.models_config.as_deref(), args.verbose)?;
-    Registry::build(&models_cfg, &args.models)
+    Registry::build(&models_cfg, &args.models, args.all_models)
 }
 
 fn render_opts(args: &CommonArgs) -> RenderOpts {
@@ -162,7 +162,7 @@ fn run_models(models_config: Option<&Path>, format: Format) -> Result<ExitCode> 
 
 fn run_calibrate(model: &str, path: &Path, models_config: Option<&Path>) -> Result<ExitCode> {
     let cfg = ModelsConfig::load(models_config, false)?;
-    let registry = Registry::build(&cfg, std::slice::from_ref(&model.to_string()))?;
+    let registry = Registry::build(&cfg, std::slice::from_ref(&model.to_string()), false)?;
     let report = count::run(path, &registry, false)?;
 
     let mut out = format!("ctos calibrate — model: {model}\n\n");

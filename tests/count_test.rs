@@ -59,3 +59,47 @@ fn claude_marks_approximate() {
     let v = json(&["-m", "claude", "--format", "json", path.to_str().unwrap()]);
     assert_eq!(v["code"][0]["approx"], serde_json::json!(true));
 }
+
+#[test]
+fn all_models_skips_unbuildable_and_succeeds() {
+    // hunyuan is registered but its tokenizer is not vendored in test builds;
+    // --all-models must warn+skip it and still succeed with the other models.
+    let path = fixture("code");
+    let out = run(&["--all-models", "--format", "json", path.to_str().unwrap()]);
+    assert_eq!(
+        out.status.code(),
+        Some(0),
+        "one bad model must not fail the run"
+    );
+
+    let v: serde_json::Value = serde_json::from_str(&stdout(&out)).expect("valid JSON");
+    let models: Vec<String> = v["models"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .map(|m| m.as_str().unwrap().to_string())
+        .collect();
+    assert!(models.contains(&"qwen3".to_string()));
+    assert!(models.contains(&"gpt-4o".to_string()));
+    assert!(models.contains(&"claude".to_string()));
+    assert!(
+        !models.contains(&"hunyuan".to_string()),
+        "unbuildable model should be skipped"
+    );
+
+    // The warning is emitted on stderr.
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("hunyuan"),
+        "expected a warning about hunyuan"
+    );
+}
+
+#[test]
+fn m_all_is_an_alias_for_all_models() {
+    let path = fixture("code");
+    let out = run(&["-m", "all", "--format", "json", path.to_str().unwrap()]);
+    assert_eq!(out.status.code(), Some(0));
+    let v: serde_json::Value = serde_json::from_str(&stdout(&out)).expect("valid JSON");
+    assert!(v["models"].as_array().unwrap().len() >= 2);
+}
