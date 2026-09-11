@@ -2,6 +2,10 @@
 
 **English** | [简体中文](README.zh-CN.md)
 
+<p align="center">
+  <img src="banner.webp" alt="ctos — count tokens of skill" width="100%">
+</p>
+
 **count tokens of skill** — a cloc-style, cross-platform token counter for Agent Skills and source code.
 
 > ⚠️ *not related to Watch Dogs' ctOS.*

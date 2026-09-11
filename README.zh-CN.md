@@ -2,6 +2,10 @@
 
 [English](README.md) | **简体中文**
 
+<p align="center">
+  <img src="banner.webp" alt="ctos — count tokens of skill" width="100%">
+</p>
+
 **count tokens of skill** —— 一个 cloc 风格、跨平台的 token 统计工具，同时服务于 Agent Skill 与源代码。
 
 > ⚠️ *与《看门狗》里的 ctOS 无关。*

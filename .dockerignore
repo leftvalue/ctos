@@ -3,4 +3,5 @@ target
 .github
 *.md
 !README.md
+banner.webp
 tests/golden
