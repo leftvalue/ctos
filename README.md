@@ -4,7 +4,7 @@
 
 > ⚠️ *not related to Watch Dogs' ctOS.*
 
-[![CI](https://github.com/your-org/ctos/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/ctos/actions/workflows/ci.yml)
+[![CI](https://github.com/leftvalue/ctos/actions/workflows/ci.yml/badge.svg)](https://github.com/leftvalue/ctos/actions/workflows/ci.yml)
 ![license](https://img.shields.io/badge/license-GPL--3.0-blue.svg)
 
 `cloc` tells you how many **lines** of code you have. `ctos` tells you how many
@@ -104,7 +104,7 @@ for six targets (Linux x86_64/aarch64, macOS x86_64/arm64, Windows x86_64):
 
 ```bash
 # Linux/macOS example
-curl -L -o ctos https://github.com/<you>/ctos/releases/download/v0.1.0/ctos-x86_64-unknown-linux-musl
+curl -L -o ctos https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-unknown-linux-musl
 chmod +x ctos
 sudo mv ctos /usr/local/bin/         # or anywhere on your PATH
 ctos --version
@@ -118,9 +118,9 @@ On Windows, download `ctos-x86_64-pc-windows-msvc.exe` and put it on your PATH.
 ### Option 2 — install from git with Cargo (no crates.io needed)
 
 ```bash
-cargo install --git https://github.com/<you>/ctos --tag v0.1.0
+cargo install --git https://github.com/leftvalue/ctos --tag v0.1.0
 # or the latest default branch:
-cargo install --git https://github.com/<you>/ctos
+cargo install --git https://github.com/leftvalue/ctos
 ```
 
 This compiles locally and installs `ctos` into `~/.cargo/bin`. The vendored
@@ -129,7 +129,7 @@ builtin tokenizers are committed in the repo, so the build is fully offline.
 ### Option 3 — build from a clone
 
 ```bash
-git clone https://github.com/<you>/ctos
+git clone https://github.com/leftvalue/ctos
 cd ctos
 cargo build --release        # binary at target/release/ctos
 ```
@@ -323,7 +323,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install ctos
-        run: cargo install --git https://github.com/<you>/ctos --tag v0.1.0   # or download a release binary
+        run: cargo install --git https://github.com/leftvalue/ctos --tag v0.1.0   # or download a release binary
       - name: Enforce skill budgets
         run: ctos check ./skills -m gpt-4o
 ```
@@ -432,7 +432,7 @@ calibration is planned for v0.2.
 Requires a recent stable Rust toolchain.
 
 ```bash
-git clone https://github.com/your-org/ctos
+git clone https://github.com/leftvalue/ctos
 cd ctos
 cargo build --release       # binary at target/release/ctos
 cargo test --all-features   # unit + golden + exit-code tests
