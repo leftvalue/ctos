@@ -136,19 +136,66 @@ the single heaviest skill body that a trigger can pull in).
 ### Option 1 — download a prebuilt binary (no toolchain needed)
 
 Prebuilt static binaries are published on the **[Releases](../../releases)** page
-for six targets (Linux x86_64/aarch64, macOS x86_64/arm64, Windows x86_64),
-packaged as compressed archives:
+for five targets, packaged as compressed archives:
+
+| Platform | Arch | Asset |
+|---|---|---|
+| Linux | x86_64 | `ctos-x86_64-unknown-linux-musl.tar.gz` |
+| Linux | aarch64 | `ctos-aarch64-unknown-linux-musl.tar.gz` |
+| macOS | Apple Silicon (arm64) | `ctos-aarch64-apple-darwin.tar.gz` |
+| macOS | Intel (x86_64) | `ctos-x86_64-apple-darwin.tar.gz` |
+| Windows | x86_64 | `ctos-x86_64-pc-windows-msvc.zip` |
+
+> **Not sure which one?** Run `uname -m`: `x86_64` / `amd64` → the x86_64 build;
+> `arm64` / `aarch64` → the aarch64 build. (On a modern Mac, Apple Silicon =
+> arm64.) Replace `v0.1.0` below with the latest tag on the Releases page.
+
+**Linux — x86_64 (Intel/AMD):**
 
 ```bash
-# Linux/macOS example
 curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-unknown-linux-musl.tar.gz | tar xz
-chmod +x ctos
-sudo mv ctos /usr/local/bin/         # or anywhere on your PATH
+sudo install -m 755 ctos /usr/local/bin/ctos   # or: sudo mv ctos /usr/local/bin/
 ctos --version
 ```
 
-On Windows, download `ctos-x86_64-pc-windows-msvc.zip`, unzip it, and put
-`ctos.exe` on your PATH.
+**Linux — aarch64 (ARM64):**
+
+```bash
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-aarch64-unknown-linux-musl.tar.gz | tar xz
+sudo install -m 755 ctos /usr/local/bin/ctos
+ctos --version
+```
+
+**macOS — Apple Silicon (M1/M2/M3, arm64):**
+
+```bash
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-aarch64-apple-darwin.tar.gz | tar xz
+xattr -d com.apple.quarantine ./ctos 2>/dev/null || true   # clear Gatekeeper quarantine
+sudo mv ctos /usr/local/bin/
+ctos --version
+```
+
+**macOS — Intel (x86_64):**
+
+```bash
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-apple-darwin.tar.gz | tar xz
+xattr -d com.apple.quarantine ./ctos 2>/dev/null || true   # clear Gatekeeper quarantine
+sudo mv ctos /usr/local/bin/
+ctos --version
+```
+
+**Windows — x86_64 (PowerShell):**
+
+```powershell
+Invoke-WebRequest -Uri "https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-pc-windows-msvc.zip" -OutFile ctos.zip
+Expand-Archive ctos.zip -DestinationPath .
+.\ctos.exe --version
+# then move ctos.exe to a folder on your PATH
+```
+
+> **macOS Gatekeeper:** the binaries are not code-signed/notarized, so the first
+> run may be blocked. The `xattr` line above clears the quarantine flag; or open
+> **System Settings → Privacy & Security → Open Anyway** after the first prompt.
 
 > Releases appear only after a maintainer pushes a version tag — see
 > [Cutting a release](#cutting-a-release).
@@ -217,7 +264,7 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-GitHub Actions then vendors the tokenizers, cross-compiles all six targets,
+GitHub Actions then vendors the tokenizers, cross-compiles all five targets,
 attaches the binaries to a GitHub Release, and builds & pushes the Docker image to
 `ghcr.io/leftvalue/ctos` (tagged with the version and `latest`). (`ci.yml` —
 fmt/clippy/test — runs on every push/PR; only `release.yml` needs a tag.)
@@ -534,7 +581,7 @@ cargo test --all-features   # unit + golden + exit-code tests
 ```
 
 Cross-platform static binaries are produced by the release workflow using
-[`cargo-zigbuild`](https://github.com/rust-cross/cargo-zigbuild) for six targets
+[`cargo-zigbuild`](https://github.com/rust-cross/cargo-zigbuild) for five targets
 (Linux x86_64/aarch64 musl, macOS x86_64/arm64, Windows x86_64).
 
 For a packaged local build:

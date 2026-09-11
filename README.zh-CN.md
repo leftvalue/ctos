@@ -127,17 +127,65 @@ File                      Language  lines  bytes  tokens
 
 ### 方式 1 —— 下载预编译二进制（无需工具链）
 
-预编译的静态二进制发布在 **[Releases](../../releases)** 页面，覆盖六个目标平台（Linux x86_64/aarch64、macOS x86_64/arm64、Windows x86_64），以压缩包形式提供：
+预编译的静态二进制发布在 **[Releases](../../releases)** 页面，覆盖五个目标平台，以压缩包形式提供：
+
+| 平台 | 架构 | 资产文件 |
+|---|---|---|
+| Linux | x86_64 | `ctos-x86_64-unknown-linux-musl.tar.gz` |
+| Linux | aarch64 | `ctos-aarch64-unknown-linux-musl.tar.gz` |
+| macOS | Apple Silicon（arm64） | `ctos-aarch64-apple-darwin.tar.gz` |
+| macOS | Intel（x86_64） | `ctos-x86_64-apple-darwin.tar.gz` |
+| Windows | x86_64 | `ctos-x86_64-pc-windows-msvc.zip` |
+
+> **不确定选哪个？** 运行 `uname -m`：输出 `x86_64` / `amd64` → 选 x86_64 包；
+> `arm64` / `aarch64` → 选 aarch64 包。（较新的 Mac 均为 Apple Silicon = arm64。）
+> 下面命令里的 `v0.1.0` 请替换为 Releases 页面上的最新 tag。
+
+**Linux — x86_64（Intel/AMD）：**
 
 ```bash
-# Linux/macOS 示例
 curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-unknown-linux-musl.tar.gz | tar xz
-chmod +x ctos
-sudo mv ctos /usr/local/bin/         # 或放到 PATH 上任意位置
+sudo install -m 755 ctos /usr/local/bin/ctos   # 或：sudo mv ctos /usr/local/bin/
 ctos --version
 ```
 
-Windows 下载 `ctos-x86_64-pc-windows-msvc.zip`，解压后把 `ctos.exe` 放到 PATH 即可。
+**Linux — aarch64（ARM64）：**
+
+```bash
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-aarch64-unknown-linux-musl.tar.gz | tar xz
+sudo install -m 755 ctos /usr/local/bin/ctos
+ctos --version
+```
+
+**macOS — Apple Silicon（M1/M2/M3，arm64）：**
+
+```bash
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-aarch64-apple-darwin.tar.gz | tar xz
+xattr -d com.apple.quarantine ./ctos 2>/dev/null || true   # 解除 Gatekeeper 隔离
+sudo mv ctos /usr/local/bin/
+ctos --version
+```
+
+**macOS — Intel（x86_64）：**
+
+```bash
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-apple-darwin.tar.gz | tar xz
+xattr -d com.apple.quarantine ./ctos 2>/dev/null || true   # 解除 Gatekeeper 隔离
+sudo mv ctos /usr/local/bin/
+ctos --version
+```
+
+**Windows — x86_64（PowerShell）：**
+
+```powershell
+Invoke-WebRequest -Uri "https://github.com/leftvalue/ctos/releases/download/v0.1.0/ctos-x86_64-pc-windows-msvc.zip" -OutFile ctos.zip
+Expand-Archive ctos.zip -DestinationPath .
+.\ctos.exe --version
+# 然后把 ctos.exe 放到 PATH 上的目录里
+```
+
+> **macOS Gatekeeper：** 二进制未做代码签名/公证，首次运行可能被拦截。上面的 `xattr`
+> 命令会清除隔离标记；或在首次弹窗后到 **系统设置 → 隐私与安全性 → 仍要打开** 放行。
 
 > Release 只有在维护者推送版本 tag 后才会出现 —— 见[发布流程](#发布流程维护者)。
 
@@ -201,7 +249,7 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-随后 GitHub Actions 会：拉取 tokenizer、交叉编译全部六个目标、把二进制附加到 GitHub Release，并构建并推送 Docker 镜像到 `ghcr.io/leftvalue/ctos`（打上版本号与 `latest` 标签）。（`ci.yml` —— fmt/clippy/test —— 每次 push/PR 都会跑；只有 `release.yml` 需要 tag。）
+随后 GitHub Actions 会：拉取 tokenizer、交叉编译全部五个目标、把二进制附加到 GitHub Release，并构建并推送 Docker 镜像到 `ghcr.io/leftvalue/ctos`（打上版本号与 `latest` 标签）。（`ci.yml` —— fmt/clippy/test —— 每次 push/PR 都会跑；只有 `release.yml` 需要 tag。）
 
 ---
 
@@ -467,7 +515,7 @@ cargo build --release       # 二进制位于 target/release/ctos
 cargo test --all-features   # 单元 + golden + 退出码 测试
 ```
 
-跨平台静态二进制由 release 工作流用 [`cargo-zigbuild`](https://github.com/rust-cross/cargo-zigbuild) 为六个目标产出（Linux x86_64/aarch64 musl、macOS x86_64/arm64、Windows x86_64）。
+跨平台静态二进制由 release 工作流用 [`cargo-zigbuild`](https://github.com/rust-cross/cargo-zigbuild) 为五个目标产出（Linux x86_64/aarch64 musl、macOS x86_64/arm64、Windows x86_64）。
 
 本地打包构建：
 
