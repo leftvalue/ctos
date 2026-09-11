@@ -25,6 +25,7 @@ ctos:  tokens of stuff → files, bytes, tokens   (+ skill L1/L2/L3 layers)
 ## Table of contents
 
 - [Quick start](#quick-start)
+- [Installation](#installation)
 - [What it counts](#what-it-counts)
 - [The three-layer skill model](#the-three-layer-skill-model)
 - [Model matrix](#model-matrix)
@@ -91,6 +92,69 @@ resident L1 total: 92 tok  →  peak injection: 3,504 tok
 The last line is what capacity planning actually cares about: **resident cost**
 (every skill's L1 is always in context) and **peak injection cost** (resident +
 the single heaviest skill body that a trigger can pull in).
+
+---
+
+## Installation
+
+### Option 1 — download a prebuilt binary (no toolchain needed)
+
+Prebuilt static binaries are published on the **[Releases](../../releases)** page
+for six targets (Linux x86_64/aarch64, macOS x86_64/arm64, Windows x86_64):
+
+```bash
+# Linux/macOS example
+curl -L -o ctos https://github.com/<you>/ctos/releases/download/v0.1.0/ctos-x86_64-unknown-linux-musl
+chmod +x ctos
+sudo mv ctos /usr/local/bin/         # or anywhere on your PATH
+ctos --version
+```
+
+On Windows, download `ctos-x86_64-pc-windows-msvc.exe` and put it on your PATH.
+
+> Releases appear only after a maintainer pushes a version tag — see
+> [Cutting a release](#cutting-a-release).
+
+### Option 2 — install from git with Cargo (no crates.io needed)
+
+```bash
+cargo install --git https://github.com/<you>/ctos --tag v0.1.0
+# or the latest default branch:
+cargo install --git https://github.com/<you>/ctos
+```
+
+This compiles locally and installs `ctos` into `~/.cargo/bin`. The vendored
+builtin tokenizers are committed in the repo, so the build is fully offline.
+
+### Option 3 — build from a clone
+
+```bash
+git clone https://github.com/<you>/ctos
+cd ctos
+cargo build --release        # binary at target/release/ctos
+```
+
+### Option 4 — crates.io
+
+Not published yet (`publish = false`). If/when published:
+
+```bash
+cargo install ctos
+```
+
+### Cutting a release (maintainers)
+
+Pushing code alone does **not** create binaries. The release workflow triggers on
+a version tag:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+
+GitHub Actions then vendors the tokenizers, cross-compiles all six targets, and
+attaches the binaries to a GitHub Release. (`ci.yml` — fmt/clippy/test — runs on
+every push/PR; only `release.yml` needs a tag.)
 
 ---
 
@@ -259,7 +323,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install ctos
-        run: cargo install ctos   # or download a release binary
+        run: cargo install --git https://github.com/<you>/ctos --tag v0.1.0   # or download a release binary
       - name: Enforce skill budgets
         run: ctos check ./skills -m gpt-4o
 ```
