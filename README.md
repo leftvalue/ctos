@@ -83,10 +83,10 @@ ctos check ./skills
 Example (language aggregation + skill layers):
 
 ```
-ctos v0.2.1 — count tokens of skill
+ctos v0.2.2 — count tokens of skill
 root: /repo/skills
       7 files scanned.  (6 text, 1 binary)
-github.com/leftvalue/ctos v0.2.1  T=0.02 s (350.0 files/s, 8100.0 lines/s)
+github.com/leftvalue/ctos v0.2.2  T=0.02 s (350.0 files/s, 8100.0 lines/s)
 
 tokenizer: gpt-4o (tiktoken)
 ┌──────────┬───────┬───────┬─────────┬─────────┐
@@ -148,12 +148,12 @@ for five targets, packaged as compressed archives:
 
 > **Not sure which one?** Run `uname -m`: `x86_64` / `amd64` → the x86_64 build;
 > `arm64` / `aarch64` → the aarch64 build. (On a modern Mac, Apple Silicon =
-> arm64.) Replace `v0.2.1` below with the latest tag on the Releases page.
+> arm64.) Replace `v0.2.2` below with the latest tag on the Releases page.
 
 **Linux — x86_64 (Intel/AMD):**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.1/ctos-x86_64-unknown-linux-musl.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.2/ctos-x86_64-unknown-linux-musl.tar.gz | tar xz
 sudo install -m 755 ctos /usr/local/bin/ctos   # or: sudo mv ctos /usr/local/bin/
 ctos --version
 ```
@@ -161,7 +161,7 @@ ctos --version
 **Linux — aarch64 (ARM64):**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.1/ctos-aarch64-unknown-linux-musl.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.2/ctos-aarch64-unknown-linux-musl.tar.gz | tar xz
 sudo install -m 755 ctos /usr/local/bin/ctos
 ctos --version
 ```
@@ -169,7 +169,7 @@ ctos --version
 **macOS — Apple Silicon (M1/M2/M3, arm64):**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.1/ctos-aarch64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.2/ctos-aarch64-apple-darwin.tar.gz | tar xz
 xattr -d com.apple.quarantine ./ctos 2>/dev/null || true   # clear Gatekeeper quarantine
 sudo mv ctos /usr/local/bin/
 ctos --version
@@ -178,7 +178,7 @@ ctos --version
 **macOS — Intel (x86_64):**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.1/ctos-x86_64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.2/ctos-x86_64-apple-darwin.tar.gz | tar xz
 xattr -d com.apple.quarantine ./ctos 2>/dev/null || true   # clear Gatekeeper quarantine
 sudo mv ctos /usr/local/bin/
 ctos --version
@@ -187,7 +187,7 @@ ctos --version
 **Windows — x86_64 (PowerShell):**
 
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/leftvalue/ctos/releases/download/v0.2.1/ctos-x86_64-pc-windows-msvc.zip" -OutFile ctos.zip
+Invoke-WebRequest -Uri "https://github.com/leftvalue/ctos/releases/download/v0.2.2/ctos-x86_64-pc-windows-msvc.zip" -OutFile ctos.zip
 Expand-Archive ctos.zip -DestinationPath .
 .\ctos.exe --version
 # then move ctos.exe to a folder on your PATH
@@ -203,7 +203,7 @@ Expand-Archive ctos.zip -DestinationPath .
 ### Option 2 — install from git with Cargo (no crates.io needed)
 
 ```bash
-cargo install --git https://github.com/leftvalue/ctos --tag v0.2.1
+cargo install --git https://github.com/leftvalue/ctos --tag v0.2.2
 # or the latest default branch:
 cargo install --git https://github.com/leftvalue/ctos
 ```
@@ -298,8 +298,8 @@ Pushing code alone does **not** create binaries. The release workflow triggers o
 a version tag:
 
 ```bash
-git tag v0.2.1
-git push origin v0.2.1
+git tag v0.2.2
+git push origin v0.2.2
 ```
 
 GitHub Actions then vendors the tokenizers, cross-compiles all five targets,
@@ -499,7 +499,7 @@ aggregation:
 
 ```json
 {
-  "tool": { "name": "ctos", "version": "0.2.1" },
+  "tool": { "name": "ctos", "version": "0.2.2" },
   "models": ["gpt-4o"],
   "results": [
     {
@@ -546,7 +546,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install ctos
-        run: cargo install --git https://github.com/leftvalue/ctos --tag v0.2.1   # or download a release binary
+        run: cargo install --git https://github.com/leftvalue/ctos --tag v0.2.2   # or download a release binary
       - name: Enforce skill budgets
         run: ctos check ./skills -m gpt-4o
 ```
