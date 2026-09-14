@@ -45,7 +45,8 @@ fn metrics_for(entry: &FileEntry, approx: bool) -> (String, String, String, Stri
         .map(group_int)
         .unwrap_or_else(|| "-".to_string());
     let tokens = match entry.tokens {
-        Some(v) => fmt_tokens(v, approx),
+        // In estimate mode, only actually-estimated files get the `~` prefix.
+        Some(v) => fmt_tokens(v, approx || entry.estimated),
         None => "-".to_string(),
     };
     (
@@ -153,7 +154,7 @@ pub fn render_by_file_tree(mr: &ModelReport) -> String {
         group_int(files as u64),
         group_int(lines),
         human_bytes(bytes),
-        fmt_tokens(tokens, mr.approx),
+        fmt_tokens(tokens, mr.values_approx()),
     ));
 
     out

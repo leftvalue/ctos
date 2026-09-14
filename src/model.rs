@@ -13,6 +13,23 @@ pub struct FileEntry {
     pub lines: Option<u64>,
     /// `None` for binary files (only bytes are meaningful).
     pub tokens: Option<f64>,
+    /// True when `tokens` was estimated (sampling) rather than exactly encoded.
+    pub estimated: bool,
+}
+
+/// Sampling statistics for `--estimate` runs.
+#[derive(Debug, Clone)]
+pub struct EstimateInfo {
+    /// Files that were (partially) encoded: Full or Slice.
+    pub sampled_files: usize,
+    /// Total text files considered.
+    pub total_files: usize,
+    /// Characters actually encoded.
+    pub sampled_chars: u64,
+    /// Total characters across text files.
+    pub total_chars: u64,
+    /// Heuristic error bound as a fraction (e.g. 0.018 = ±1.8%).
+    pub error_bound: f64,
 }
 
 /// Language aggregation row (cloc-style).
@@ -79,9 +96,18 @@ pub struct ModelReport {
     pub languages: Vec<LangStat>,
     pub files: Vec<FileEntry>,
     pub skills: Vec<SkillResult>,
+    /// Present when the run used `--estimate` (sampling).
+    pub estimate: Option<EstimateInfo>,
 }
 
 impl ModelReport {
+    /// Whether code/L3 token values should display with a `~` prefix:
+    /// approximate tokenizer (claude-approx) OR estimate-mode sampling.
+    /// Skill L1/L2 stay exact even in estimate mode.
+    pub fn values_approx(&self) -> bool {
+        self.approx || self.estimate.is_some()
+    }
+
     /// Returns (files, lines, bytes, tokens) code totals.
     pub fn code_totals(&self) -> (usize, u64, u64, f64) {
         let files = self.files.len();

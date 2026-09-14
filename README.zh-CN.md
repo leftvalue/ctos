@@ -79,10 +79,10 @@ ctos check ./skills
 示例（按语言聚合 + skill 分层）：
 
 ```
-ctos v0.2.0 — count tokens of skill
+ctos v0.2.1 — count tokens of skill
 root: /repo/skills
       7 files scanned.  (6 text, 1 binary)
-github.com/leftvalue/ctos v0.2.0  T=0.02 s (350.0 files/s, 8100.0 lines/s)
+github.com/leftvalue/ctos v0.2.1  T=0.02 s (350.0 files/s, 8100.0 lines/s)
 
 tokenizer: gpt-4o (tiktoken)
 ┌──────────┬───────┬───────┬─────────┬─────────┐
@@ -139,12 +139,12 @@ File                      Language  lines  bytes  tokens
 
 > **不确定选哪个？** 运行 `uname -m`：输出 `x86_64` / `amd64` → 选 x86_64 包；
 > `arm64` / `aarch64` → 选 aarch64 包。（较新的 Mac 均为 Apple Silicon = arm64。）
-> 下面命令里的 `v0.2.0` 请替换为 Releases 页面上的最新 tag。
+> 下面命令里的 `v0.2.1` 请替换为 Releases 页面上的最新 tag。
 
 **Linux — x86_64（Intel/AMD）：**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.0/ctos-x86_64-unknown-linux-musl.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.1/ctos-x86_64-unknown-linux-musl.tar.gz | tar xz
 sudo install -m 755 ctos /usr/local/bin/ctos   # 或：sudo mv ctos /usr/local/bin/
 ctos --version
 ```
@@ -152,7 +152,7 @@ ctos --version
 **Linux — aarch64（ARM64）：**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.0/ctos-aarch64-unknown-linux-musl.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.1/ctos-aarch64-unknown-linux-musl.tar.gz | tar xz
 sudo install -m 755 ctos /usr/local/bin/ctos
 ctos --version
 ```
@@ -160,7 +160,7 @@ ctos --version
 **macOS — Apple Silicon（M1/M2/M3，arm64）：**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.0/ctos-aarch64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.1/ctos-aarch64-apple-darwin.tar.gz | tar xz
 xattr -d com.apple.quarantine ./ctos 2>/dev/null || true   # 解除 Gatekeeper 隔离
 sudo mv ctos /usr/local/bin/
 ctos --version
@@ -169,7 +169,7 @@ ctos --version
 **macOS — Intel（x86_64）：**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.0/ctos-x86_64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.1/ctos-x86_64-apple-darwin.tar.gz | tar xz
 xattr -d com.apple.quarantine ./ctos 2>/dev/null || true   # 解除 Gatekeeper 隔离
 sudo mv ctos /usr/local/bin/
 ctos --version
@@ -178,7 +178,7 @@ ctos --version
 **Windows — x86_64（PowerShell）：**
 
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/leftvalue/ctos/releases/download/v0.2.0/ctos-x86_64-pc-windows-msvc.zip" -OutFile ctos.zip
+Invoke-WebRequest -Uri "https://github.com/leftvalue/ctos/releases/download/v0.2.1/ctos-x86_64-pc-windows-msvc.zip" -OutFile ctos.zip
 Expand-Archive ctos.zip -DestinationPath .
 .\ctos.exe --version
 # 然后把 ctos.exe 放到 PATH 上的目录里
@@ -192,7 +192,7 @@ Expand-Archive ctos.zip -DestinationPath .
 ### 方式 2 —— 用 Cargo 从 git 安装（无需 crates.io）
 
 ```bash
-cargo install --git https://github.com/leftvalue/ctos --tag v0.2.0
+cargo install --git https://github.com/leftvalue/ctos --tag v0.2.1
 # 或使用最新的默认分支：
 cargo install --git https://github.com/leftvalue/ctos
 ```
@@ -278,8 +278,8 @@ ctos completions fish > ~/.config/fish/completions/ctos.fish
 仅推送代码**不会**产生二进制。发布工作流由版本 tag 触发：
 
 ```bash
-git tag v0.2.0
-git push origin v0.2.0
+git tag v0.2.1
+git push origin v0.2.1
 ```
 
 随后 GitHub Actions 会：拉取 tokenizer、交叉编译全部五个目标、把二进制附加到 GitHub Release，并构建并推送 Docker 镜像到 `ghcr.io/leftvalue/ctos`（打上版本号与 `latest` 标签）。（`ci.yml` —— fmt/clippy/test —— 每次 push/PR 都会跑；只有 `release.yml` 需要 tag。）
@@ -381,6 +381,8 @@ ctos calibrate --model <m> <PATH>   # 输出各层计数，供人工校准
 | `--max-file-size <MB>` | 遍历时跳过超大文件（命令行显式路径豁免） | 无 |
 | `--hide-rate` | 隐藏耗时/吞吐（输出确定性可复现） | 关闭 |
 | `--no-progress` | 关闭实时进度条（`-q` 隐含关闭） | 自动 |
+| `--estimate` | 快速预估模式：按语言分层采样，替代全量精确编码 | 关闭 |
+| `--sample-budget <CHARS>` | `--estimate` 的每语言字符预算 | 524288 |
 | `--by-file` | 逐文件树形展示，而非按语言聚合 | 关闭 |
 | `--by-file-by-lang` | 逐文件树形展示 **加** 语言聚合 | 关闭 |
 | `--stdin-name <file>` | 用于判定 `-`（stdin）输入语言的文件名 | — |
@@ -397,11 +399,24 @@ ctos calibrate --model <m> <PATH>   # 输出各层计数，供人工校准
 **实时进度条。** 扫描大目录时，`ctos` 会在 **stderr** 上显示两阶段进度（stdout 的表格/JSON 输出保持逐字节纯净）：
 
 ```
-⠴ [1/2] scan 1234 files · 56.8 MB · 5.2 MB/s [00:00:11]        ← 扫描中（总量未知）
-████████████████░░░░░░ [2/2] tokenize 800/1234 qwen3 ETA 00:08  ← 计数中（总量已知）
+⠴ scan 1234 files · 56.8 MB · 5.2 MB/s [00:00:11]                          ← 扫描中（总量未知）
+█████████████░░░░░ tokenize 12.4/56.8 MiB @ 3.1 MiB/s qwen3 · src/… ETA 00:08  ← 计数中（按字节计量）
 ```
 
+token 化进度条按**字节**而非文件数计量——单个巨大的 vendored 文件会按比例推动进度条、ETA 保持诚实，不会卡在 99% 不动；同时显示当前正在编码的文件名。skill 的 L3 资产只编码一次并复用（不会按层重复编码）。
+
 仅当 stderr 是终端时才渲染——管道、重定向与 CI 日志自动保持干净。`-q` 隐含关闭，`--no-progress` 强制关闭；`--hide-rate` 只隐藏表头里的*最终*耗时/吞吐行（与进度条互不影响）。
+
+**快速预估模式。** 大仓库精确计数太慢时：
+
+```bash
+ctos --estimate .            # 采样估算，替代逐文件精确编码
+ctos --estimate --sample-budget 262144 .   # 预算更小 = 更快、更粗
+```
+
+文件并不同质（混合目录树的 chars→token 比例离散约 20%），但**语言内**相当稳定（常见语言实测 CV 5-13%）。因此 `--estimate` 按语言确定性采样：大文件优先、单文件最多贡献 64K 字符头部切片、消耗每语言预算（默认 512K 字符，`--sample-budget` 可调）。切片文件按自身头部比例外推；未采样文件按语言比例估算。token 化工作量与**仓库大小无关**——100 MB 的目录树几秒出结果。实测语料（Rust 工具仓库与 1000 文件的 Perl 仓库）误差分别为 1.9% 与 4.4%，均在报告的误差界内；误差界本身可能偏松（上述仓库为 ±7% 到 ±28%）——请视为最坏情况指示，而非紧的置信区间。
+
+输出诚实标记：`[estimate] sampled N/M files · X% of chars · ±Y%` 统计行（误差界只覆盖未精确编码的部分——全量采样时报 ±0%）、预估数值带 `~` 前缀、JSON 附 `estimate` 元数据对象。SKILL.md 的 L1/L2 始终精确。`check` 拒绝 `--estimate`（预算门禁不能建立在预估上）。全程无随机，结果完全确定可复现。
 
 ---
 
@@ -411,7 +426,7 @@ ctos calibrate --model <m> <PATH>   # 输出各层计数，供人工校准
 
 ```json
 {
-  "tool": { "name": "ctos", "version": "0.2.0" },
+  "tool": { "name": "ctos", "version": "0.2.1" },
   "models": ["gpt-4o"],
   "results": [
     {
@@ -458,7 +473,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install ctos
-        run: cargo install --git https://github.com/leftvalue/ctos --tag v0.2.0   # 或下载 release 二进制
+        run: cargo install --git https://github.com/leftvalue/ctos --tag v0.2.1   # 或下载 release 二进制
       - name: Enforce skill budgets
         run: ctos check ./skills -m gpt-4o
 ```

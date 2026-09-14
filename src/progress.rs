@@ -1,7 +1,11 @@
 //! Two-phase live progress reporting on stderr.
 //!
 //! Phase 1 (scan):     total unknown -> spinner + files/bytes/rate counter.
-//! Phase 2 (tokenize): total known   -> bar + current model + ETA.
+//! Phase 2 (tokenize): total known   -> byte-denominated bar + current file + ETA.
+//!
+//! The tokenize bar is weighted by **bytes**, not file count: a single huge
+//! vendored file moves the bar proportionally and the ETA stays honest, instead
+//! of the bar freezing at 99% while a multi-megabyte file is being encoded.
 //!
 //! The bar only ever writes to stderr, so stdout (table/JSON/md/csv and the
 //! golden tests) is untouched. When disabled (quiet, `--no-progress`, or
@@ -16,9 +20,14 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::util::human_bytes;
 
-const SPINNER_TEMPLATE: &str =
-    "{spinner:.green} [1/2] scan {pos} files · {msg} [{elapsed_precise}]";
-const BAR_TEMPLATE: &str = "{bar:28.cyan/blue} [2/2] tokenize {pos}/{len} {msg} ETA {eta_precise}";
+const SPINNER_TEMPLATE: &str = "{spinner:.green} scan {pos} files · {msg} [{elapsed_precise}]";
+// `{wide_msg}` absorbs the remaining terminal width and ellipsizes, so the
+// line never wraps (wrapping makes indicatif repaint multiple lines = flicker).
+const BAR_TEMPLATE: &str =
+    "{bar:20.cyan/blue} tokenize {bytes}/{total_bytes} @ {bytes_per_sec} {wide_msg} ETA {eta_precise}";
+
+/// How many trailing characters of a file path to show in the bar message.
+const FILE_DISPLAY_CHARS: usize = 42;
 
 impl std::fmt::Debug for ProgressReporter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -37,6 +46,8 @@ pub struct ProgressReporter {
     start: Instant,
     /// Bytes accepted so far in the scan phase.
     scan_bytes: AtomicU64,
+    /// Current model name (phase 2 message prefix).
+    model: Mutex<String>,
 }
 
 impl ProgressReporter {
@@ -59,6 +70,7 @@ impl ProgressReporter {
             enabled: AtomicBool::new(enabled),
             start: Instant::now(),
             scan_bytes: AtomicU64::new(0),
+            model: Mutex::new(String::new()),
         }
     }
 
@@ -84,30 +96,47 @@ impl ProgressReporter {
         bar.inc(1);
     }
 
-    /// Phase 2: switch to the deterministic bar for `total_work` tok.count calls.
-    pub fn begin_tokenize(&self, total_work: u64, model: &str) {
+    /// Phase 2: switch to the byte-weighted bar for `total_bytes` of text.
+    pub fn begin_tokenize(&self, total_bytes: u64, model: &str) {
         if !self.enabled.load(Ordering::Relaxed) {
             return;
         }
+        *self.model.lock().expect("model lock") = model.to_string();
+
         let mut guard = self.bar.lock().expect("progress bar lock");
         // Close phase 1 cleanly before switching templates.
         if let Some(old) = guard.take() {
             old.finish_and_clear();
         }
-        let bar = ProgressBar::new(total_work)
+        let bar = ProgressBar::new(total_bytes)
             .with_style(ProgressStyle::with_template(BAR_TEMPLATE).expect("valid bar template"));
         bar.set_message(model.to_string());
         *guard = Some(bar);
     }
 
-    /// Phase 2: one tok.count completed.
-    pub fn tick_tokenize(&self) {
+    /// Phase 2: announce the file about to be encoded (before the slow call,
+    /// so a huge file is visible in the bar while it is being chewed on).
+    pub fn show_file(&self, display: &str) {
+        if !self.enabled.load(Ordering::Relaxed) {
+            return;
+        }
+        let guard = self.bar.lock().expect("progress bar lock");
+        let Some(bar) = guard.as_ref() else { return };
+        let model = self.model.lock().expect("model lock");
+        bar.set_message(format!(
+            "{model} · {}",
+            tail_chars(display, FILE_DISPLAY_CHARS)
+        ));
+    }
+
+    /// Phase 2: `bytes` of text finished encoding.
+    pub fn tick_bytes(&self, bytes: u64) {
         if !self.enabled.load(Ordering::Relaxed) {
             return;
         }
         let guard = self.bar.lock().expect("progress bar lock");
         if let Some(bar) = guard.as_ref() {
-            bar.inc(1);
+            bar.inc(bytes);
         }
     }
 
@@ -120,6 +149,17 @@ impl ProgressReporter {
     }
 }
 
+/// Last `n` chars of `s`, prefixed with an ellipsis when truncated
+/// (char-boundary safe).
+fn tail_chars(s: &str, n: usize) -> String {
+    let count = s.chars().count();
+    if count <= n {
+        return s.to_string();
+    }
+    let skip = count - n;
+    format!("…{}", s.chars().skip(skip).collect::<String>())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -129,7 +169,8 @@ mod tests {
         let r = ProgressReporter::new(false);
         r.tick_scan_file(1024);
         r.begin_tokenize(10, "m");
-        r.tick_tokenize();
+        r.show_file("a.txt");
+        r.tick_bytes(5);
         r.finish();
         // Reaching here without panic is the contract; nothing is drawn.
     }
@@ -140,7 +181,8 @@ mod tests {
         r.tick_scan_file(10);
         r.tick_scan_file(20);
         r.begin_tokenize(4, "qwen3");
-        r.tick_tokenize();
+        r.show_file("some/long/path/file.rs");
+        r.tick_bytes(2);
         r.finish();
     }
 
@@ -149,5 +191,17 @@ mod tests {
         let r = ProgressReporter::new(true);
         r.finish();
         r.finish();
+    }
+
+    #[test]
+    fn tail_truncates_on_char_boundaries() {
+        assert_eq!(tail_chars("short", 10), "short");
+        let long = "abcdefghijklmnopqrstuvwxyz";
+        let t = tail_chars(long, 5);
+        assert_eq!(t, "…vwxyz");
+        // Multi-byte chars must not panic.
+        let cjk = "你好世界你好世界";
+        let t2 = tail_chars(cjk, 3);
+        assert_eq!(t2, "…好世界");
     }
 }

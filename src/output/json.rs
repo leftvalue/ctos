@@ -51,6 +51,20 @@ struct CodeFileJson {
     is_binary: bool,
     lines: Option<u64>,
     tokens: Option<f64>,
+    /// Present (true) only when `tokens` was estimated by sampling.
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    estimated: bool,
+}
+
+/// Sampling metadata for estimate-mode runs.
+#[derive(Serialize)]
+struct EstimateJson {
+    sampled_files: usize,
+    total_files: usize,
+    sampled_chars: u64,
+    total_chars: u64,
+    /// Heuristic error bound as a fraction (0.018 = ±1.8%).
+    error_bound: f64,
 }
 
 #[derive(Serialize)]
@@ -59,6 +73,9 @@ struct CodeBlockJson {
     approx: bool,
     languages: Vec<LangJson>,
     files: Vec<CodeFileJson>,
+    /// Present when the run used `--estimate`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    estimate: Option<EstimateJson>,
 }
 
 #[derive(Serialize)]
@@ -131,8 +148,16 @@ fn code_block(mr: &ModelReport) -> CodeBlockJson {
                 is_binary: f.is_binary,
                 lines: f.lines,
                 tokens: f.tokens,
+                estimated: f.estimated,
             })
             .collect(),
+        estimate: mr.estimate.as_ref().map(|e| EstimateJson {
+            sampled_files: e.sampled_files,
+            total_files: e.total_files,
+            sampled_chars: e.sampled_chars,
+            total_chars: e.total_chars,
+            error_bound: e.error_bound,
+        }),
     }
 }
 

@@ -86,6 +86,10 @@ pub struct ScanOpts {
     pub stdin_name: Option<String>,
     /// Live progress reporter for the scan phase (None = no progress).
     pub progress: Option<Arc<ProgressReporter>>,
+    /// Fast estimate mode: stratified sampling instead of exact encoding.
+    pub estimate: bool,
+    /// Per-language character budget for estimate-mode sampling.
+    pub sample_budget: usize,
 }
 
 /// Result of scanning one or more paths.

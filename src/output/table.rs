@@ -232,6 +232,23 @@ fn model_banner(mr: &ModelReport) -> String {
     format!("tokenizer: {} ({}){}", mr.model, mr.source_label, approx)
 }
 
+/// One-line estimate-mode summary shown under the model banner.
+fn estimate_line(mr: &ModelReport) -> Option<String> {
+    let e = mr.estimate.as_ref()?;
+    let pct = if e.total_chars > 0 {
+        e.sampled_chars as f64 / e.total_chars as f64 * 100.0
+    } else {
+        0.0
+    };
+    Some(format!(
+        "[estimate] sampled {}/{} files · {:.1}% of chars · ±{:.1}%",
+        e.sampled_files,
+        e.total_files,
+        pct,
+        e.error_bound * 100.0
+    ))
+}
+
 // ---------------------------------------------------------------------------
 // Tables.
 // ---------------------------------------------------------------------------
@@ -250,7 +267,7 @@ fn language_grid(mr: &ModelReport, opts: RenderOpts) -> Grid {
             group_int(l.files as u64),
             group_int(l.lines),
             human_bytes(l.bytes),
-            fmt_tokens(l.tokens, mr.approx),
+            fmt_tokens(l.tokens, mr.values_approx()),
         ]);
     }
     g.rule();
@@ -260,7 +277,7 @@ fn language_grid(mr: &ModelReport, opts: RenderOpts) -> Grid {
         group_int(files as u64),
         group_int(lines),
         human_bytes(bytes),
-        fmt_tokens(tokens, mr.approx),
+        fmt_tokens(tokens, mr.values_approx()),
     ]);
     g
 }
@@ -296,7 +313,8 @@ fn skill_grid(mr: &ModelReport) -> (Grid, f64, f64) {
                     s.skill.clone(),
                     fmt_tokens(l1, mr.approx),
                     fmt_tokens(l2, mr.approx),
-                    fmt_tokens(s.l3_tokens, mr.approx),
+                    // L3 sums may include sampled estimates in estimate mode.
+                    fmt_tokens(s.l3_tokens, mr.values_approx()),
                     human_bytes(s.l3_bytes),
                     status.label(),
                 ]);
@@ -309,7 +327,7 @@ fn skill_grid(mr: &ModelReport) -> (Grid, f64, f64) {
         format!("TOTAL ({valid} valid skills)"),
         fmt_tokens(sum_l1, mr.approx),
         fmt_tokens(sum_l2, mr.approx),
-        fmt_tokens(sum_l3_tok, mr.approx),
+        fmt_tokens(sum_l3_tok, mr.values_approx()),
         human_bytes(sum_l3_bytes),
         String::new(),
     ]);
@@ -337,7 +355,7 @@ fn render_skill_section(mr: &ModelReport, style: TableStyle, verbose: bool) -> S
                 let tok = if f.is_binary {
                     "- (binary)".to_string()
                 } else {
-                    fmt_tokens(f.tokens, mr.approx)
+                    fmt_tokens(f.tokens, mr.values_approx())
                 };
                 out.push_str(&format!(
                     "    {:<50} {:>10}  {}\n",
@@ -361,6 +379,12 @@ pub fn render(report: &Report, opts: RenderOpts) -> String {
         out.push('\n');
         out.push_str(&model_banner(mr));
         out.push('\n');
+        if !opts.quiet {
+            if let Some(line) = estimate_line(mr) {
+                out.push_str(&line);
+                out.push('\n');
+            }
+        }
 
         if opts.by_file && !opts.by_file_by_lang {
             // by-file only.

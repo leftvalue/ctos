@@ -6,6 +6,7 @@ mod check;
 mod cli;
 mod config;
 mod count;
+mod estimate;
 mod lang;
 mod model;
 mod output;
@@ -82,18 +83,24 @@ fn max_file_size_bytes(args: &CommonArgs) -> Option<u64> {
     args.max_file_size.map(|mb| (mb * 1_048_576.0) as u64)
 }
 
-fn scan_opts(args: &CommonArgs) -> ScanOpts {
+fn scan_opts(args: &CommonArgs) -> Result<ScanOpts> {
     // Live progress: only when stderr is a terminal, not silenced by
     // --quiet / --no-progress (pipes and CI logs stay clean automatically).
     let progress_enabled =
         !args.quiet && !args.no_progress && progress::ProgressReporter::enabled_by_default();
 
-    ScanOpts {
+    if args.estimate && args.sample_budget == 0 {
+        anyhow::bail!("--sample-budget must be at least 1 character");
+    }
+
+    Ok(ScanOpts {
         no_ignore: args.no_ignore,
         stdin_name: args.stdin_name.clone(),
         progress: Some(std::sync::Arc::new(progress::ProgressReporter::new(
             progress_enabled,
         ))),
+        estimate: args.estimate,
+        sample_budget: if args.estimate { args.sample_budget } else { 0 },
         filter: FilterConfig {
             exclude_dirs: args.exclude_dir.clone(),
             include_exts: args.include_ext.clone(),
@@ -102,7 +109,7 @@ fn scan_opts(args: &CommonArgs) -> ScanOpts {
             exclude_langs: args.exclude_lang.clone(),
             max_file_size_bytes: max_file_size_bytes(args),
         },
-    }
+    })
 }
 
 fn render_opts(args: &CommonArgs) -> Result<RenderOpts> {
@@ -125,7 +132,7 @@ fn render_opts(args: &CommonArgs) -> Result<RenderOpts> {
 fn run_count(args: &CommonArgs) -> Result<ExitCode> {
     let paths = require_paths(args)?;
     let registry = build_registry(args)?;
-    let report = count::run(paths, &registry, &scan_opts(args))?;
+    let report = count::run(paths, &registry, &scan_opts(args)?)?;
 
     output::emit(
         &report,
@@ -148,11 +155,16 @@ fn run_count(args: &CommonArgs) -> Result<ExitCode> {
 }
 
 fn run_check(args: &CommonArgs, baseline: Option<&Path>) -> Result<ExitCode> {
+    if args.estimate {
+        anyhow::bail!(
+            "--estimate cannot be combined with `check`: the budget gate must run on exact counts"
+        );
+    }
     let paths = require_paths(args)?;
     let registry = build_registry(args)?;
     let budgets = BudgetsConfig::load(args.budgets.as_deref(), args.verbose)?;
 
-    let report = count::run(paths, &registry, &scan_opts(args))?;
+    let report = count::run(paths, &registry, &scan_opts(args)?)?;
     let outcome = check::evaluate(&report, &budgets, baseline)?;
 
     match args.format {

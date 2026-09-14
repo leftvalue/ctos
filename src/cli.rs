@@ -139,6 +139,21 @@ pub struct CommonArgs {
     #[arg(long = "no-progress")]
     pub no_progress: bool,
 
+    /// Fast estimate mode: stratified per-language sampling instead of exact
+    /// encoding of every file. Values are marked with `~` and carry an error
+    /// bound. SKILL.md L1/L2 stay exact; cannot be combined with `check`.
+    #[arg(long)]
+    pub estimate: bool,
+
+    /// Per-language character budget for --estimate sampling (default 524288).
+    /// Smaller = faster, larger = more accurate.
+    #[arg(
+        long = "sample-budget",
+        value_name = "CHARS",
+        default_value_t = crate::estimate::DEFAULT_SAMPLE_BUDGET
+    )]
+    pub sample_budget: usize,
+
     /// Per-file detail (expands L3 files / by-file listing).
     #[arg(short = 'v', long)]
     pub verbose: bool,

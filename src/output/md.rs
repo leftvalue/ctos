@@ -20,7 +20,7 @@ fn lang_table(mr: &ModelReport, opts: RenderOpts) -> String {
             group_int(l.files as u64),
             group_int(l.lines),
             human_bytes(l.bytes),
-            fmt_tokens(l.tokens, mr.approx),
+            fmt_tokens(l.tokens, mr.values_approx()),
         ));
     }
     let (files, lines, bytes, tokens) = mr.code_totals();
@@ -29,7 +29,7 @@ fn lang_table(mr: &ModelReport, opts: RenderOpts) -> String {
         group_int(files as u64),
         group_int(lines),
         human_bytes(bytes),
-        fmt_tokens(tokens, mr.approx),
+        fmt_tokens(tokens, mr.values_approx()),
     ));
     out
 }
@@ -41,7 +41,7 @@ fn file_table(mr: &ModelReport) -> String {
     for f in &mr.files {
         let lines = f.lines.map(group_int).unwrap_or_else(|| "-".to_string());
         let tok = match f.tokens {
-            Some(v) => fmt_tokens(v, mr.approx),
+            Some(v) => fmt_tokens(v, mr.approx || f.estimated),
             None => "-".to_string(),
         };
         out.push_str(&format!(
@@ -69,7 +69,7 @@ fn skill_table(mr: &ModelReport) -> String {
                 .unwrap_or_else(|| "-".into()),
             s.l2.map(|v| fmt_tokens(v, mr.approx))
                 .unwrap_or_else(|| "-".into()),
-            fmt_tokens(s.l3_tokens, mr.approx),
+            fmt_tokens(s.l3_tokens, mr.values_approx()),
             human_bytes(s.l3_bytes),
             md_escape(&status),
         ));
@@ -94,6 +94,21 @@ pub fn render(report: &Report, opts: RenderOpts) -> String {
     for mr in &report.reports {
         let approx = if mr.approx { " (~approx)" } else { "" };
         out.push_str(&format!("## tokenizer: {}{}\n\n", mr.model, approx));
+
+        if let Some(e) = &mr.estimate {
+            let pct = if e.total_chars > 0 {
+                e.sampled_chars as f64 / e.total_chars as f64 * 100.0
+            } else {
+                0.0
+            };
+            out.push_str(&format!(
+                "> **estimate mode**: sampled {}/{} files · {:.1}% of chars encoded · ±{:.1}% heuristic error bound\n\n",
+                e.sampled_files,
+                e.total_files,
+                pct,
+                e.error_bound * 100.0
+            ));
+        }
 
         if opts.by_file && !opts.by_file_by_lang {
             out.push_str(&file_table(mr));
