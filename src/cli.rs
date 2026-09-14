@@ -244,4 +244,17 @@ pub enum Command {
         #[arg(value_enum)]
         shell: Shell,
     },
+
+    /// Self-update: check GitHub Releases for a newer version and replace
+    /// the running binary (download verified against the release digest).
+    /// Docker installs are refused; cargo-installed binaries warn.
+    Update {
+        /// Only report the latest release; never download or install.
+        #[arg(long)]
+        check: bool,
+
+        /// Skip the interactive confirmation prompt.
+        #[arg(short = 'y', long)]
+        yes: bool,
+    },
 }

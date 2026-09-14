@@ -79,10 +79,10 @@ ctos check ./skills
 示例（按语言聚合 + skill 分层）：
 
 ```
-ctos v0.2.3 — count tokens of skill
+ctos v0.3.0 — count tokens of skill
 root: /repo/skills
       7 files scanned.  (6 text, 1 binary)
-github.com/leftvalue/ctos v0.2.3  T=0.02 s (350.0 files/s, 8100.0 lines/s)
+github.com/leftvalue/ctos v0.3.0  T=0.02 s (350.0 files/s, 8100.0 lines/s)
 
 tokenizer: gpt-4o (tiktoken)
 ┌──────────┬───────┬───────┬─────────┬─────────┐
@@ -139,12 +139,12 @@ File                      Language  lines  bytes  tokens
 
 > **不确定选哪个？** 运行 `uname -m`：输出 `x86_64` / `amd64` → 选 x86_64 包；
 > `arm64` / `aarch64` → 选 aarch64 包。（较新的 Mac 均为 Apple Silicon = arm64。）
-> 下面命令里的 `v0.2.3` 请替换为 Releases 页面上的最新 tag。
+> 下面命令里的 `v0.3.0` 请替换为 Releases 页面上的最新 tag。
 
 **Linux — x86_64（Intel/AMD）：**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.3/ctos-x86_64-unknown-linux-musl.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.3.0/ctos-x86_64-unknown-linux-musl.tar.gz | tar xz
 sudo install -m 755 ctos /usr/local/bin/ctos   # 或：sudo mv ctos /usr/local/bin/
 ctos --version
 ```
@@ -152,7 +152,7 @@ ctos --version
 **Linux — aarch64（ARM64）：**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.3/ctos-aarch64-unknown-linux-musl.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.3.0/ctos-aarch64-unknown-linux-musl.tar.gz | tar xz
 sudo install -m 755 ctos /usr/local/bin/ctos
 ctos --version
 ```
@@ -160,7 +160,7 @@ ctos --version
 **macOS — Apple Silicon（M1/M2/M3，arm64）：**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.3/ctos-aarch64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.3.0/ctos-aarch64-apple-darwin.tar.gz | tar xz
 xattr -d com.apple.quarantine ./ctos 2>/dev/null || true   # 解除 Gatekeeper 隔离
 sudo mv ctos /usr/local/bin/
 ctos --version
@@ -169,7 +169,7 @@ ctos --version
 **macOS — Intel（x86_64）：**
 
 ```bash
-curl -L https://github.com/leftvalue/ctos/releases/download/v0.2.3/ctos-x86_64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/leftvalue/ctos/releases/download/v0.3.0/ctos-x86_64-apple-darwin.tar.gz | tar xz
 xattr -d com.apple.quarantine ./ctos 2>/dev/null || true   # 解除 Gatekeeper 隔离
 sudo mv ctos /usr/local/bin/
 ctos --version
@@ -178,7 +178,7 @@ ctos --version
 **Windows — x86_64（PowerShell）：**
 
 ```powershell
-Invoke-WebRequest -Uri "https://github.com/leftvalue/ctos/releases/download/v0.2.3/ctos-x86_64-pc-windows-msvc.zip" -OutFile ctos.zip
+Invoke-WebRequest -Uri "https://github.com/leftvalue/ctos/releases/download/v0.3.0/ctos-x86_64-pc-windows-msvc.zip" -OutFile ctos.zip
 Expand-Archive ctos.zip -DestinationPath .
 .\ctos.exe --version
 # 然后把 ctos.exe 放到 PATH 上的目录里
@@ -192,7 +192,7 @@ Expand-Archive ctos.zip -DestinationPath .
 ### 方式 2 —— 用 Cargo 从 git 安装（无需 crates.io）
 
 ```bash
-cargo install --git https://github.com/leftvalue/ctos --tag v0.2.3
+cargo install --git https://github.com/leftvalue/ctos --tag v0.3.0
 # 或使用最新的默认分支：
 cargo install --git https://github.com/leftvalue/ctos
 ```
@@ -273,13 +273,31 @@ ctos completions fish > ~/.config/fish/completions/ctos.fish
 
 > `powershell` 与 `elvish` 同样支持（`ctos completions powershell`、`ctos completions elvish`）。升级 `ctos` 后，若子命令或参数有变化，请重新生成脚本。
 
+### 自更新
+
+从 release 安装的二进制可以原地自更新：
+
+```bash
+ctos update --check   # 只报告当前版本与最新 release
+ctos update           # 下载、校验并替换正在运行的二进制
+ctos update --yes     # 跳过确认（stdin 被管道接走时也自动跳过）
+```
+
+说明：
+
+- 从 GitHub Releases 下载对应 OS/架构的资产，替换前先校验其 **sha256 摘要**（GitHub API 提供）。
+- 交互式运行时会请求确认；脚本/管道环境直接执行。
+- **Docker 安装会拒绝**——请改用 `docker pull ghcr.io/leftvalue/ctos:latest`。
+- `cargo install` 安装的会警告（规范升级方式是 `cargo install --git ... --tag vX.Y.Z`）但仍可更新。
+- GitHub API 限流（免认证 60 次/时每 IP）时稍后重试即可。
+
 ### 发布流程（维护者）
 
 仅推送代码**不会**产生二进制。发布工作流由版本 tag 触发：
 
 ```bash
-git tag v0.2.3
-git push origin v0.2.3
+git tag v0.3.0
+git push origin v0.3.0
 ```
 
 随后 GitHub Actions 会：拉取 tokenizer、交叉编译全部五个目标、把二进制附加到 GitHub Release，并构建并推送 Docker 镜像到 `ghcr.io/leftvalue/ctos`（打上版本号与 `latest` 标签）。（`ci.yml` —— fmt/clippy/test —— 每次 push/PR 都会跑；只有 `release.yml` 需要 tag。）
@@ -427,7 +445,7 @@ ctos --estimate --sample-budget 262144 .   # 预算更小 = 更快、更粗
 
 ```json
 {
-  "tool": { "name": "ctos", "version": "0.2.3" },
+  "tool": { "name": "ctos", "version": "0.3.0" },
   "models": ["gpt-4o"],
   "results": [
     {
@@ -474,7 +492,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install ctos
-        run: cargo install --git https://github.com/leftvalue/ctos --tag v0.2.3   # 或下载 release 二进制
+        run: cargo install --git https://github.com/leftvalue/ctos --tag v0.3.0   # 或下载 release 二进制
       - name: Enforce skill budgets
         run: ctos check ./skills -m gpt-4o
 ```

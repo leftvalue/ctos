@@ -33,6 +33,9 @@ COPY . .
 RUN touch build.rs && cargo build --release \
  && strip target/release/ctos
 
+# Marker so `ctos update` can refuse inside the image (update = docker pull).
+RUN touch /ctos-docker-marker
+
 ########################################
 FROM scratch AS final
 
@@ -42,6 +45,7 @@ LABEL org.opencontainers.image.title="ctos" \
       org.opencontainers.image.licenses="GPL-3.0"
 
 COPY --from=builder /src/target/release/ctos /ctos
+COPY --from=builder /ctos-docker-marker /.ctos-docker
 
 # Mount your project at /work and pass paths under it.
 WORKDIR /work

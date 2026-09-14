@@ -13,6 +13,7 @@ mod output;
 mod progress;
 mod skill;
 mod tokenizer;
+mod update;
 mod util;
 mod walk;
 
@@ -55,6 +56,7 @@ fn run(cli: Cli) -> Result<ExitCode> {
             models_config,
         }) => run_calibrate(&model, &path, models_config.as_deref()),
         Some(Command::Completions { shell }) => run_completions(shell),
+        Some(Command::Update { check, yes }) => update::run(check, yes).map(|_| ExitCode::SUCCESS),
     }
 }
 
