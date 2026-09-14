@@ -3,11 +3,13 @@
 use std::fs;
 use std::io::Read;
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use anyhow::{Context, Result};
 use ignore::WalkBuilder;
 
 use crate::lang::language_of;
+use crate::progress::ProgressReporter;
 
 const SKILL_FILE: &str = "SKILL.md";
 /// Number of head bytes sampled for binary sniffing.
@@ -82,6 +84,8 @@ pub struct ScanOpts {
     pub filter: FilterConfig,
     /// Filename used to determine the language of stdin (`-`) input.
     pub stdin_name: Option<String>,
+    /// Live progress reporter for the scan phase (None = no progress).
+    pub progress: Option<Arc<ProgressReporter>>,
 }
 
 /// Result of scanning one or more paths.
@@ -274,6 +278,10 @@ fn scan_one(
                     skill_dirs.push(p);
                 }
             }
+        }
+
+        if let Some(progress) = &opts.progress {
+            progress.tick_scan_file(scanned.bytes);
         }
 
         files.push(scanned);

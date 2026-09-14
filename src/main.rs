@@ -9,6 +9,7 @@ mod count;
 mod lang;
 mod model;
 mod output;
+mod progress;
 mod skill;
 mod tokenizer;
 mod util;
@@ -82,9 +83,17 @@ fn max_file_size_bytes(args: &CommonArgs) -> Option<u64> {
 }
 
 fn scan_opts(args: &CommonArgs) -> ScanOpts {
+    // Live progress: only when stderr is a terminal, not silenced by
+    // --quiet / --no-progress (pipes and CI logs stay clean automatically).
+    let progress_enabled =
+        !args.quiet && !args.no_progress && progress::ProgressReporter::enabled_by_default();
+
     ScanOpts {
         no_ignore: args.no_ignore,
         stdin_name: args.stdin_name.clone(),
+        progress: Some(std::sync::Arc::new(progress::ProgressReporter::new(
+            progress_enabled,
+        ))),
         filter: FilterConfig {
             exclude_dirs: args.exclude_dir.clone(),
             include_exts: args.include_ext.clone(),

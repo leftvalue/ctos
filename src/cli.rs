@@ -134,6 +134,11 @@ pub struct CommonArgs {
     #[arg(long = "hide-rate")]
     pub hide_rate: bool,
 
+    /// Disable the live progress bar. Implied by --quiet; also auto-hidden
+    /// whenever stderr is not a terminal (pipes, CI logs).
+    #[arg(long = "no-progress")]
+    pub no_progress: bool,
+
     /// Per-file detail (expands L3 files / by-file listing).
     #[arg(short = 'v', long)]
     pub verbose: bool,

@@ -1,6 +1,6 @@
 [package]
 name = "ctos"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.74"
 description = "count tokens of skill — a cloc-style, cross-platform token counter for Agent Skills and source code"
@@ -30,6 +30,7 @@ tiktoken = ["dep:tiktoken-rs", "dep:base64", "dep:rustc-hash", "dep:flate2"]
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
 clap_complete = "4.5"
+indicatif = "0.17"
 ignore = "0.4"
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9"

@@ -7,6 +7,7 @@ use std::time::Instant;
 use anyhow::Result;
 
 use crate::model::{FileEntry, L3File, LangStat, ModelReport, Report, SkillResult, SkillStatus};
+use crate::progress::ProgressReporter;
 use crate::skill::{parse_skill_md, SkillParse};
 use crate::tokenizer::{ModelEntry, Registry};
 use crate::walk::{scan_many, ScanOpts, ScannedFile};
@@ -22,11 +23,21 @@ pub fn run(paths: &[PathBuf], registry: &Registry, opts: &ScanOpts) -> Result<Re
     let binary_files = scanned.files.iter().filter(|f| f.is_binary).count();
     let total_lines: u64 = scanned.files.iter().filter_map(|f| f.lines).sum();
 
+    // ---- Progress phase 2 setup (tokenize) ----
+    // Exact per-model work: one tok.count per text file, one per L3 text file,
+    // plus two (L1/L2) per skill whose SKILL.md parses valid.
+    let noop = ProgressReporter::new(false);
+    let progress = opts.progress.as_deref().unwrap_or(&noop);
+
+    let per_model_work: u64 = count_tokenize_work(&scanned.files, &scanned.skill_dirs);
+
     let mut reports = Vec::with_capacity(registry.models.len());
     for model in &registry.models {
-        let report = compute_model_report(model, &scanned.files, &scanned.skill_dirs)?;
+        progress.begin_tokenize(per_model_work, &model.name);
+        let report = compute_model_report(model, &scanned.files, &scanned.skill_dirs, progress)?;
         reports.push(report);
     }
+    progress.finish();
 
     Ok(Report {
         tool_name: "ctos".to_string(),
@@ -41,10 +52,37 @@ pub fn run(paths: &[PathBuf], registry: &Registry, opts: &ScanOpts) -> Result<Re
     })
 }
 
+/// Number of tok.count calls one model will make for these files/skills.
+fn count_tokenize_work(files: &[ScannedFile], skill_dirs: &[std::path::PathBuf]) -> u64 {
+    let text_files = files.iter().filter(|f| f.content.is_some()).count() as u64;
+
+    let mut l3_text = 0u64;
+    let mut valid_skills = 0u64;
+    for dir in skill_dirs {
+        let skill_md = files
+            .iter()
+            .find(|f| f.path == dir.join(SKILL_FILE))
+            .and_then(|f| f.content.as_ref());
+        if let Some(md) = skill_md {
+            if matches!(parse_skill_md(md), SkillParse::Valid { .. }) {
+                valid_skills += 1;
+            }
+        }
+        for f in files {
+            if f.path.starts_with(dir) && f.path != dir.join(SKILL_FILE) && f.content.is_some() {
+                l3_text += 1;
+            }
+        }
+    }
+
+    text_files + l3_text + 2 * valid_skills
+}
+
 fn compute_model_report(
     model: &ModelEntry,
     files: &[ScannedFile],
     skill_dirs: &[std::path::PathBuf],
+    progress: &ProgressReporter,
 ) -> Result<ModelReport> {
     let tok = &model.tokenizer;
     let approx = tok.approx();
@@ -55,7 +93,11 @@ fn compute_model_report(
 
     for f in files {
         let tokens = match &f.content {
-            Some(text) => Some(tok.count(text)?),
+            Some(text) => {
+                let n = tok.count(text)?;
+                progress.tick_tokenize();
+                Some(n)
+            }
             None => None,
         };
         let entry = FileEntry {
@@ -144,7 +186,11 @@ fn compute_model_report(
                 continue;
             }
             let t = match &f.content {
-                Some(text) => tok.count(text)?,
+                Some(text) => {
+                    let n = tok.count(text)?;
+                    progress.tick_tokenize();
+                    n
+                }
                 None => 0.0,
             };
             l3_tokens += t;
@@ -165,6 +211,8 @@ fn compute_model_report(
             } => {
                 let l1 = tok.count(&l1_text)? + model.overhead_l1;
                 let l2 = tok.count(&l2_text)?;
+                progress.tick_tokenize();
+                progress.tick_tokenize();
                 skills.push(SkillResult {
                     skill: skill_name,
                     rel_path,
