@@ -73,6 +73,7 @@ pub fn run(paths: &[PathBuf], registry: &Registry, opts: &ScanOpts) -> Result<Re
         files_scanned,
         binary_files,
         total_lines,
+        skipped_tokenizer_files: scanned.skipped_tokenizer_files,
         elapsed_secs: start.elapsed().as_secs_f64(),
     })
 }

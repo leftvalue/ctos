@@ -94,3 +94,83 @@ fn explicit_vcs_root_is_still_counted() {
     );
     let _ = fs::remove_dir_all(&dir);
 }
+
+/// Build a temp project with vendored tokenizer artifacts.
+fn make_tokenizer_project(tag: &str) -> PathBuf {
+    let dir = std::env::temp_dir().join(format!("ctos_tok_test_{tag}_{}", std::process::id()));
+    let _ = fs::remove_dir_all(&dir);
+    fs::create_dir_all(dir.join("tokenizers/qwen")).unwrap();
+    fs::create_dir_all(dir.join("tokenizers/kimi")).unwrap();
+    fs::create_dir_all(dir.join("src")).unwrap();
+    fs::write(dir.join("tokenizers/qwen/tokenizer.json"), "{\"vocab\":{}}").unwrap();
+    fs::write(dir.join("tokenizers/kimi/tiktoken.model"), "aGFsbw== 0\n").unwrap();
+    fs::write(dir.join("src/a.rs"), "fn main() {}\n").unwrap();
+    dir
+}
+
+#[test]
+fn tokenizer_artifacts_are_skipped_by_default() {
+    let dir = make_tokenizer_project("default");
+    let paths = text_file_count(&["-m", "claude", "--format", "json", dir.to_str().unwrap()]);
+    assert!(
+        !paths
+            .iter()
+            .any(|p| p.ends_with("tokenizer.json") || p.ends_with("tiktoken.model")),
+        "tokenizer artifacts must be skipped by default, got {paths:?}"
+    );
+    assert!(
+        paths.iter().any(|p| p.ends_with("src/a.rs")),
+        "regular sources must be counted, got {paths:?}"
+    );
+    // -v reports how many artifacts were skipped.
+    let out = run(&[
+        "-v",
+        "-m",
+        "claude",
+        "--format",
+        "json",
+        dir.to_str().unwrap(),
+    ]);
+    let stderr = String::from_utf8_lossy(&out.stderr);
+    assert!(
+        stderr.contains("skipped 2 tokenizer artifact file(s)"),
+        "-v should report 2 skipped artifacts, stderr: {stderr}"
+    );
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn count_tokenizers_flag_includes_artifacts() {
+    let dir = make_tokenizer_project("flag");
+    let paths = text_file_count(&[
+        "--count-tokenizers",
+        "-m",
+        "claude",
+        "--format",
+        "json",
+        dir.to_str().unwrap(),
+    ]);
+    assert!(
+        paths.iter().any(|p| p.ends_with("tokenizer.json")),
+        "--count-tokenizers must include tokenizer.json, got {paths:?}"
+    );
+    assert!(
+        paths.iter().any(|p| p.ends_with("tiktoken.model")),
+        "--count-tokenizers must include tiktoken.model, got {paths:?}"
+    );
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn explicit_tokenizer_path_is_always_counted() {
+    let dir = make_tokenizer_project("explicit");
+    let file = dir.join("tokenizers/qwen/tokenizer.json");
+    let paths = text_file_count(&["-m", "claude", "--format", "json", file.to_str().unwrap()]);
+    // The rel path of an explicit file root is just the file name (base is
+    // its parent directory).
+    assert!(
+        paths.iter().any(|p| p.ends_with("tokenizer.json")),
+        "explicit tokenizer path should be counted even by default, got {paths:?}"
+    );
+    let _ = fs::remove_dir_all(&dir);
+}

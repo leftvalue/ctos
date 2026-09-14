@@ -147,6 +147,9 @@ pub struct Report {
     pub binary_files: usize,
     /// Total physical lines across text files.
     pub total_lines: u64,
+    /// Traversed tokenizer artifact files skipped by default
+    /// (reported under `-v`; `--count-tokenizers` includes them).
+    pub skipped_tokenizer_files: usize,
     /// Wall-clock seconds for scan + all-model counting.
     pub elapsed_secs: f64,
 }

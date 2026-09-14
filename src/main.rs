@@ -101,6 +101,7 @@ fn scan_opts(args: &CommonArgs) -> Result<ScanOpts> {
         ))),
         estimate: args.estimate,
         sample_budget: if args.estimate { args.sample_budget } else { 0 },
+        count_tokenizer_files: args.count_tokenizers,
         filter: FilterConfig {
             exclude_dirs: args.exclude_dir.clone(),
             include_exts: args.include_ext.clone(),
@@ -134,6 +135,13 @@ fn run_count(args: &CommonArgs) -> Result<ExitCode> {
     let registry = build_registry(args)?;
     let report = count::run(paths, &registry, &scan_opts(args)?)?;
 
+    if args.verbose && report.skipped_tokenizer_files > 0 {
+        eprintln!(
+            "[ctos] skipped {} tokenizer artifact file(s) — use --count-tokenizers to include them",
+            report.skipped_tokenizer_files
+        );
+    }
+
     output::emit(
         &report,
         args.format,
@@ -165,6 +173,12 @@ fn run_check(args: &CommonArgs, baseline: Option<&Path>) -> Result<ExitCode> {
     let budgets = BudgetsConfig::load(args.budgets.as_deref(), args.verbose)?;
 
     let report = count::run(paths, &registry, &scan_opts(args)?)?;
+    if args.verbose && report.skipped_tokenizer_files > 0 {
+        eprintln!(
+            "[ctos] skipped {} tokenizer artifact file(s) — use --count-tokenizers to include them",
+            report.skipped_tokenizer_files
+        );
+    }
     let outcome = check::evaluate(&report, &budgets, baseline)?;
 
     match args.format {

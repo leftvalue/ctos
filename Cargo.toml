@@ -1,6 +1,6 @@
 [package]
 name = "ctos"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 rust-version = "1.74"
 description = "count tokens of skill — a cloc-style, cross-platform token counter for Agent Skills and source code"

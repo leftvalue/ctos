@@ -90,6 +90,10 @@ pub struct ScanOpts {
     pub estimate: bool,
     /// Per-language character budget for estimate-mode sampling.
     pub sample_budget: usize,
+    /// Count vendored tokenizer artifact files (tokenizer.json /
+    /// tiktoken.model). Default false = skip them (model artifacts, not
+    /// project content). Explicitly passed paths are always counted.
+    pub count_tokenizer_files: bool,
 }
 
 /// Result of scanning one or more paths.
@@ -100,6 +104,9 @@ pub struct Scan {
     pub files: Vec<ScannedFile>,
     /// Directories that directly contain a SKILL.md.
     pub skill_dirs: Vec<PathBuf>,
+    /// Traversed tokenizer artifact files skipped by default (reported
+    /// under `-v`; `--count-tokenizers` includes them instead).
+    pub skipped_tokenizer_files: usize,
 }
 
 /// Heuristic: a file is binary if its head sample contains a NUL byte or is not
@@ -205,6 +212,7 @@ fn scan_one(
     opts: &ScanOpts,
     files: &mut Vec<ScannedFile>,
     skill_dirs: &mut Vec<PathBuf>,
+    skipped_tokenizers: &mut usize,
 ) -> Result<PathBuf> {
     let canon = root
         .canonicalize()
@@ -264,6 +272,18 @@ fn scan_one(
             .unwrap_or_default()
             .to_string();
 
+        // Vendored tokenizer artifacts are skipped by default — they are
+        // model artifacts, not project content (and often multi-megabyte).
+        // Skipped before fs::read so they cost nothing. Explicitly passed
+        // file roots are exempt, like max-file-size.
+        if !opts.count_tokenizer_files
+            && matches!(file_name.as_str(), "tokenizer.json" | "tiktoken.model")
+            && !(root_is_file && path == canon)
+        {
+            *skipped_tokenizers += 1;
+            continue;
+        }
+
         let raw = match fs::read(path) {
             Ok(b) => b,
             Err(_) => continue,
@@ -309,6 +329,7 @@ pub fn scan_many(paths: &[PathBuf], opts: &ScanOpts) -> Result<Scan> {
     let mut files = Vec::new();
     let mut skill_dirs = Vec::new();
     let mut roots = Vec::new();
+    let mut skipped_tokenizer_files = 0usize;
 
     for p in paths {
         if p.as_os_str() == "-" {
@@ -316,7 +337,13 @@ pub fn scan_many(paths: &[PathBuf], opts: &ScanOpts) -> Result<Scan> {
             roots.push(PathBuf::from("-"));
             continue;
         }
-        let canon = scan_one(p, opts, &mut files, &mut skill_dirs)?;
+        let canon = scan_one(
+            p,
+            opts,
+            &mut files,
+            &mut skill_dirs,
+            &mut skipped_tokenizer_files,
+        )?;
         roots.push(canon);
     }
 
@@ -329,6 +356,7 @@ pub fn scan_many(paths: &[PathBuf], opts: &ScanOpts) -> Result<Scan> {
         roots,
         files,
         skill_dirs,
+        skipped_tokenizer_files,
     })
 }
 

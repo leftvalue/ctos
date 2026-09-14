@@ -95,6 +95,13 @@ pub struct CommonArgs {
     #[arg(long = "no-ignore")]
     pub no_ignore: bool,
 
+    /// Count vendored tokenizer artifact files (tokenizer.json,
+    /// tiktoken.model). They are skipped by default: they are model
+    /// artifacts, not project content. Explicitly passed paths are always
+    /// counted.
+    #[arg(long = "count-tokenizers")]
+    pub count_tokenizers: bool,
+
     /// Exclude directories by name (comma-separated), e.g. `node_modules,test`.
     #[arg(long = "exclude-dir", value_name = "D1,D2,...", value_delimiter = ',')]
     pub exclude_dir: Vec<String>,
