@@ -224,20 +224,29 @@ fn scan_one(
         .ignore(!no_ignore)
         .parents(!no_ignore);
 
-    // Prune excluded directories by name (any path component match).
-    if !opts.filter.exclude_dirs.is_empty() {
-        let excluded: Vec<String> = opts
-            .filter
-            .exclude_dirs
-            .iter()
-            .map(|s| s.trim().to_string())
-            .collect();
-        builder.filter_entry(move |dent| {
-            let name = dent.file_name().to_string_lossy();
-            !(dent.file_type().map(|ft| ft.is_dir()).unwrap_or(false)
-                && excluded.iter().any(|e| e == name.as_ref()))
-        });
-    }
+    // Always prune VCS-internal directories (.git/.svn/.hg): they are not
+    // project content (cloc and `ripgrep --hidden` behave the same). Dotfiles
+    // themselves are still counted, and this applies even under --no-ignore.
+    // The walk root is exempt — an explicitly passed path always wins.
+    let excluded: Vec<String> = opts
+        .filter
+        .exclude_dirs
+        .iter()
+        .map(|s| s.trim().to_string())
+        .collect();
+    builder.filter_entry(move |dent| {
+        if dent.depth() == 0 {
+            return true;
+        }
+        if !dent.file_type().map(|ft| ft.is_dir()).unwrap_or(false) {
+            return true;
+        }
+        let name = dent.file_name().to_string_lossy();
+        if matches!(name.as_ref(), ".git" | ".svn" | ".hg") {
+            return false;
+        }
+        !excluded.iter().any(|e| e == name.as_ref())
+    });
 
     for dent in builder.build() {
         let dent = match dent {
